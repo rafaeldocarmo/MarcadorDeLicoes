@@ -116,14 +116,15 @@ export async function GET(req: NextRequest) {
   // 3️⃣ RESUMO GERAL
   // =============================
 
-  const geral = entregas.reduce(
-    (acc, entrega) => {
+  const geral = entregas.reduce<{ fez: number; naoFez: number }>(
+    (acc, entrega: typeof entregas[number]) => {
       if (entrega.status === "FEZ") acc.fez++
       else acc.naoFez++
       return acc
     },
     { fez: 0, naoFez: 0 }
   )
+
 
   return NextResponse.json({
     timeline,
