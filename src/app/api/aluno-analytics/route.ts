@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { EntregaSubLicao } from "@prisma/client";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -49,10 +48,10 @@ export async function GET(req: NextRequest) {
     }
   > = {}
 
-    entregas.forEach((entrega: EntregaSubLicao & { subLicao: { licao: { dataEnvio: Date }; disciplina: string } }) => {
-      const dataEnvio = entrega.subLicao.licao.dataEnvio
-        .toISOString()
-        .split("T")[0]
+  entregas.forEach((entrega: typeof entregas[number]) => {
+    const dataEnvio = entrega.subLicao.licao.dataEnvio
+      .toISOString()
+      .split("T")[0]
 
     if (!timelineMap[dataEnvio]) {
       timelineMap[dataEnvio] = {
@@ -74,6 +73,7 @@ export async function GET(req: NextRequest) {
       timelineMap[dataEnvio].disciplinasNaoFez.add(disciplina)
     }
   })
+
 
   const timeline = Object.values(timelineMap).map((item) => ({
     data: item.data,
