@@ -14,8 +14,13 @@ import {
 
 import ResumoChart from "./ResumoChart"
 
+export type ResumoAlunoItem = {
+  nome: string
+  fez: number
+  naoFez: number
+}
 type Props = {
-  initialData: any[]
+  initialData: ResumoAlunoItem[]
 }
 
 export default function Dashboard({ initialData }: Props) {
@@ -24,7 +29,7 @@ export default function Dashboard({ initialData }: Props) {
     to: new Date(),
   })
 
-  const [data, setData] = useState(initialData)
+  const [data, setData] = useState<ResumoAlunoItem[]>(initialData)
 
   async function handleFilter() {
     if (!date?.from || !date?.to) return
@@ -32,8 +37,7 @@ export default function Dashboard({ initialData }: Props) {
     const res = await fetch(
       `/api/resumo?from=${date.from.toISOString()}&to=${date.to.toISOString()}`
     )
-
-    const filtered = await res.json()
+    const filtered: ResumoAlunoItem[] = await res.json()
     setData(filtered)
   }
 

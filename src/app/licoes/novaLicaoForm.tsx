@@ -21,6 +21,7 @@ export default function NovaLicaoForm() {
   const [isPending, startTransition] = useTransition();
 
   const [dataEnvio, setDataEnvio] = useState(new Date());
+  // eslint-disable-next-line react-hooks/purity
   const [dataEntrega, setDataEntrega] = useState(new Date(Date.now() + 24 * 60 * 60 * 1000));
 
   // Exemplo de opções fixas (pode vir da API)

@@ -1,16 +1,9 @@
 import { prisma } from "@/lib/prisma";
-import Link from "next/link";
-import { Card, CardContent } from "@/components/ui/card";
 import Dashboard from "@/components/Dashboard";
 import AlunoAnalyticsSection from "@/components/AlunoAnalyticsSection";
-import { Button } from "@/components/ui/button";
-import { redirect } from "next/navigation";
 import LicoesList from "@/components/LicoesList";
 
 export default async function HomePage() {
-  const licoes = await prisma.licao.findMany({
-    orderBy: { createdAt: "desc" },
-  });
 
   const alunos = await prisma.aluno.findMany();
 

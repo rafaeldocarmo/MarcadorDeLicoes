@@ -22,12 +22,36 @@ type Props = {
   alunos: Aluno[]
 }
 
+type TimelineItem = {
+  data: string
+  fez: number
+  naoFez: number
+  disciplinasFez: string[]
+  disciplinasNaoFez: string[]
+}
+
+type DisciplinaItem = {
+  disciplina: string
+  fez: number
+  naoFez: number
+}
+
+type AlunoAnalyticsData = {
+  timeline: TimelineItem[]
+  disciplinas: DisciplinaItem[]
+  geral: {
+    fez: number
+    naoFez: number
+  }
+}
+
+
 export default function AlunoAnalyticsClient({ alunos }: Props) {
   const [selectedAluno, setSelectedAluno] = useState<string | undefined>(
     alunos[0]?.id
   )
 
-  const [data, setData] = useState<any>(null)
+  const [data, setData] = useState<AlunoAnalyticsData | null>(null)
 
   useEffect(() => {
     if (!selectedAluno) return

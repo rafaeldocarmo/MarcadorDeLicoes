@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { salvarEntregas } from "./actions";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";

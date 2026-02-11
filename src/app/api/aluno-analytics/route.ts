@@ -92,7 +92,7 @@ export async function GET(req: NextRequest) {
     { disciplina: string; fez: number; naoFez: number }
   > = {}
 
-  entregas.forEach((entrega) => {
+  entregas.forEach((entrega: typeof entregas[number]) => {
     const disciplina = entrega.subLicao.disciplina
 
     if (!disciplinaMap[disciplina]) {
