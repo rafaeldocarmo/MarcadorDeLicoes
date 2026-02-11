@@ -44,12 +44,15 @@ export async function criarLicao(data: {
   });
 
   // Criar entregas e tipar flatMap/map
-  const entregas: EntregaInput[] = licao.subLicoes.flatMap((sub) =>
-    alunos.map((aluno: { id: string }): EntregaInput => ({
-      alunoId: aluno.id,
-      subLicaoId: sub.id,
-      status: "NAO_FEZ",
-    }))
+  const entregas: EntregaInput[] = licao.subLicoes.flatMap(
+    (sub: { id: string }) =>
+      alunos.map(
+        (aluno: { id: string }): EntregaInput => ({
+          alunoId: aluno.id,
+          subLicaoId: sub.id,
+          status: "NAO_FEZ",
+        })
+      )
   );
 
   // Criar todas as entregas dentro de uma transação
