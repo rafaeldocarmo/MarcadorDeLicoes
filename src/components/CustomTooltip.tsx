@@ -1,5 +1,6 @@
 import type { TooltipProps } from "recharts"
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function CustomTooltip({ active, payload, label }: TooltipProps<any, any>) {
   if (!active || !payload || !payload.length) return null
 
@@ -11,20 +12,20 @@ export function CustomTooltip({ active, payload, label }: TooltipProps<any, any>
 
       {/* NAO FEZ */}
       <div>
-        <ul className="list-disc list-inside text-muted-foreground text-red-500">
+        <div className="list-disc list-inside text-muted-foreground text-red-500">
           {data.disciplinasNaoFez?.map((d: string) => (
             <p key={d}>{d}</p>
           ))}
-        </ul>
+        </div>
       </div>
       
       {/* FEZ */}
       <div>
-        <ul className="list-disc list-inside text-muted-foreground text-green-500">
+        <div className="list-disc list-inside text-muted-foreground text-green-500">
           {data.disciplinasFez?.map((d: string) => (
             <p key={d}>{d}</p>
           ))}
-        </ul>
+        </div>
       </div>
 
     </div>
