@@ -9,6 +9,7 @@ export async function GET(req: Request) {
   const disciplina = url.searchParams.get("disciplina");
   const material = url.searchParams.get("material");
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const where: any = {};
 
   if (search) where.titulo = { contains: search, mode: "insensitive" };
