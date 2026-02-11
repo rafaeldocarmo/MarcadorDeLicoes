@@ -15,25 +15,29 @@ export async function salvarEntregas(
   entregas: EntregaPayload[],
   licaoId: string
 ) {
-  // Buscar alunos e sublições válidos
-  const alunosValidos = new Set(
-    (await prisma.aluno.findMany({ select: { id: true } })).map((a) => a.id)
+  // Buscar alunos válidos e tipar o map
+  const alunos = await prisma.aluno.findMany({ select: { id: true } });
+  const alunosValidos = new Set<string>(
+    alunos.map((a: { id: string }) => a.id)
   );
 
-  const subLicoesValidas = new Set(
-    (await prisma.subLicao.findMany({ select: { id: true } })).map((s) => s.id)
+  // Buscar sublições válidas e tipar o map
+  const subLicoes = await prisma.subLicao.findMany({ select: { id: true } });
+  const subLicoesValidas = new Set<string>(
+    subLicoes.map((s: { id: string }) => s.id)
   );
 
   // Filtrar entregas inválidas
   const entregasFiltradas = entregas.filter(
-    (e) => alunosValidos.has(e.alunoId) && subLicoesValidas.has(e.subLicaoId)
+    (e: EntregaPayload) =>
+      alunosValidos.has(e.alunoId) && subLicoesValidas.has(e.subLicaoId)
   );
 
-  // Se não houver entregas válidas, apenas retorna
   if (!entregasFiltradas.length) return;
 
+  // Map para upsert com tipagem explícita
   await prisma.$transaction(
-    entregasFiltradas.map((entrega) =>
+    entregasFiltradas.map((entrega: EntregaPayload) =>
       prisma.entregaSubLicao.upsert({
         where: {
           alunoId_subLicaoId: {
@@ -53,4 +57,3 @@ export async function salvarEntregas(
 
   revalidatePath(`/licoes/${licaoId}`);
 }
-
