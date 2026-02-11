@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server"
-import type { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 
 type TimelineItem = {
@@ -29,13 +28,21 @@ type GeralResumo = {
   naoFez: number
 }
 
-type EntregaAnalytics = Prisma.EntregaSubLicaoGetPayload<{
-  include: {
-    subLicao: {
-      include: { licao: true }
+function getEntregasAluno(alunoId: string) {
+  return prisma.entregaSubLicao.findMany({
+    where: { alunoId },
+    include: {
+      subLicao: {
+        include: { licao: true }
+      }
+    },
+    orderBy: {
+      subLicao: { licao: { dataEnvio: "asc" } }
     }
-  }
-}>
+  })
+}
+
+type EntregaAnalytics = Awaited<ReturnType<typeof getEntregasAluno>>[number]
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -49,17 +56,7 @@ export async function GET(req: NextRequest) {
   }
 
   // Buscar entregas do aluno
-  const entregas: EntregaAnalytics[] = await prisma.entregaSubLicao.findMany({
-    where: { alunoId },
-    include: {
-      subLicao: {
-        include: { licao: true }
-      }
-    },
-    orderBy: {
-      subLicao: { licao: { dataEnvio: "asc" } }
-    }
-  })
+  const entregas: EntregaAnalytics[] = await getEntregasAluno(alunoId)
 
   // =============================
   // 1️⃣ TIMELINE POR DIA

@@ -1,6 +1,9 @@
 // /pages/api/licoes.ts
 import { prisma } from "@/lib/prisma";
-import type { Prisma } from "@prisma/client";
+
+type LicaoWhereInput = NonNullable<
+  NonNullable<Parameters<typeof prisma.licao.findMany>[0]>["where"]
+>;
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -10,7 +13,7 @@ export async function GET(req: Request) {
   const disciplina = url.searchParams.get("disciplina");
   const material = url.searchParams.get("material");
 
-  const where: Prisma.LicaoWhereInput = {};
+  const where: LicaoWhereInput = {};
 
   if (search) where.titulo = { contains: search, mode: "insensitive" };
   if (disciplina || material) {
