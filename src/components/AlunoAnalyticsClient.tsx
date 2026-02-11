@@ -45,6 +45,10 @@ type AlunoAnalyticsData = {
   }
 }
 
+async function fetchAlunoAnalytics(alunoId: string): Promise<AlunoAnalyticsData> {
+  const response = await fetch(`/api/aluno-analytics?id=${alunoId}`)
+  return (await response.json()) as AlunoAnalyticsData
+}
 
 export default function AlunoAnalyticsClient({ alunos }: Props) {
   const [selectedAluno, setSelectedAluno] = useState<string | undefined>(
@@ -56,8 +60,7 @@ export default function AlunoAnalyticsClient({ alunos }: Props) {
   useEffect(() => {
     if (!selectedAluno) return
 
-    fetch(`/api/aluno-analytics?id=${selectedAluno}`)
-      .then((r) => r.json())
+    fetchAlunoAnalytics(selectedAluno)
       .then(setData)
   }, [selectedAluno])
 
@@ -68,7 +71,7 @@ export default function AlunoAnalyticsClient({ alunos }: Props) {
           <SelectValue placeholder="Selecionar aluno" />
         </SelectTrigger>
         <SelectContent>
-          {alunos.map((aluno) => (
+          {alunos.map((aluno: Aluno) => (
             <SelectItem key={aluno.id} value={aluno.id}>
               {aluno.nome}
             </SelectItem>

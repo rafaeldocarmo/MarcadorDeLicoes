@@ -16,8 +16,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { format } from "date-fns";
 import { Input } from "@/components/ui/input";
 
+type SubLicaoForm = {
+  disciplina: string;
+  material: string;
+  descricao: string;
+};
+
 export default function NovaLicaoForm() {
-  const [subLicoes, setSubLicoes] = useState([{ disciplina: "", material: "", descricao: "" }]);
+  const [subLicoes, setSubLicoes] = useState<SubLicaoForm[]>([{ disciplina: "", material: "", descricao: "" }]);
   const [isPending, startTransition] = useTransition();
 
   const [dataEnvio, setDataEnvio] = useState(new Date());
@@ -29,15 +35,15 @@ export default function NovaLicaoForm() {
   const materiais = ["Livro", "Caderno", "Exercícios", "Vídeo", "Slides"];
 
   function adicionarSubLicao() {
-    setSubLicoes((prev) => [...prev, { disciplina: "", material: "", descricao: "" }]);
+    setSubLicoes((prev: SubLicaoForm[]) => [...prev, { disciplina: "", material: "", descricao: "" }]);
   }
 
   function removerSubLicao(index: number) {
-    setSubLicoes((prev) => prev.filter((_, i) => i !== index));
+    setSubLicoes((prev: SubLicaoForm[]) => prev.filter((_: SubLicaoForm, i: number) => i !== index));
   }
 
-  function atualizarSubLicao(index: number, field: string, value: string) {
-    setSubLicoes((prev) => prev.map((sub, i) => (i === index ? { ...sub, [field]: value } : sub)));
+  function atualizarSubLicao(index: number, field: keyof SubLicaoForm, value: string) {
+    setSubLicoes((prev: SubLicaoForm[]) => prev.map((sub: SubLicaoForm, i: number): SubLicaoForm => (i === index ? { ...sub, [field]: value } : sub)));
   }
 
   function handleSubmit(formData: FormData) {
@@ -110,7 +116,7 @@ export default function NovaLicaoForm() {
             {/* Sublições */}
             <div className="space-y-6">
               <h2 className="text-xl font-semibold">Sublições</h2>
-              {subLicoes.map((sub, index) => (
+              {subLicoes.map((sub: SubLicaoForm, index: number) => (
                 <div key={index} className="relative rounded-2xl border bg-background p-6 shadow-sm space-y-4">
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -121,7 +127,7 @@ export default function NovaLicaoForm() {
                           <SelectValue placeholder="Selecione a disciplina" />
                         </SelectTrigger>
                         <SelectContent>
-                          {disciplinas.map((d) => (
+                          {disciplinas.map((d: string) => (
                             <SelectItem key={d} value={d}>{d}</SelectItem>
                           ))}
                         </SelectContent>
@@ -135,7 +141,7 @@ export default function NovaLicaoForm() {
                           <SelectValue placeholder="Selecione o material" />
                         </SelectTrigger>
                         <SelectContent>
-                          {materiais.map((m) => (
+                          {materiais.map((m: string) => (
                             <SelectItem key={m} value={m}>{m}</SelectItem>
                           ))}
                         </SelectContent>

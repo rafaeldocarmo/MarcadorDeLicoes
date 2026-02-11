@@ -59,8 +59,6 @@ export default function MarcarEntregaPorAluno({
     return map;
   });
 
-  console.log(estadoEntregas)
-
   function toggleStatus(
     alunoId: string,
     subLicaoId: string,
@@ -68,16 +66,16 @@ export default function MarcarEntregaPorAluno({
   ) {
     const key = `${alunoId}-${subLicaoId}`;
 
-    setEstadoEntregas((prev) => {
-      const newMap = new Map(prev);
+    setEstadoEntregas((prev: Map<string, Status>) => {
+      const newMap = new Map<string, Status>(prev);
       newMap.set(key, checked ? "FEZ" : "NAO_FEZ");
       return newMap;
     });
   }
 
   function handleSalvar() {
-    const payload = Array.from(estadoEntregas.entries()).map(
-      ([key, status]) => {
+    const payload: Entrega[] = Array.from(estadoEntregas.entries()).map(
+      ([key, status]: [string, Status]): Entrega => {
         const [alunoId, subLicaoId] = key.split("-");
         return { alunoId, subLicaoId, status };
       }
@@ -98,7 +96,7 @@ export default function MarcarEntregaPorAluno({
             <thead className="bg-muted">
               <tr>
                 <th className="text-left p-4">Aluno</th>
-                {licao.subLicoes.map((sub) => (
+                {licao.subLicoes.map((sub: SubLicao) => (
                   <th key={sub.id} className="p-4 text-center">
                     <div className="font-medium">
                       {sub.disciplina}
@@ -112,7 +110,7 @@ export default function MarcarEntregaPorAluno({
             </thead>
 
             <tbody>
-              {licao.turma.alunos.map((aluno) => (
+              {licao.turma.alunos.map((aluno: Aluno) => (
                 <tr
                   key={aluno.id}
                   className="border-t hover:bg-muted/30 transition"
@@ -121,7 +119,7 @@ export default function MarcarEntregaPorAluno({
                     {aluno.nome}
                   </td>
 
-                  {licao.subLicoes.map((sub) => {
+                  {licao.subLicoes.map((sub: SubLicao) => {
                     const key = `${aluno.id}-${sub.id}`;
                     const status = estadoEntregas.get(key);
 

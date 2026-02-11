@@ -1,5 +1,6 @@
 // /pages/api/licoes.ts
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -9,8 +10,7 @@ export async function GET(req: Request) {
   const disciplina = url.searchParams.get("disciplina");
   const material = url.searchParams.get("material");
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const where: any = {};
+  const where: Prisma.LicaoWhereInput = {};
 
   if (search) where.titulo = { contains: search, mode: "insensitive" };
   if (disciplina || material) {

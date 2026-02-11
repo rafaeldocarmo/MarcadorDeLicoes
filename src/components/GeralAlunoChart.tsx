@@ -1,6 +1,5 @@
 "use client"
 
-import React from "react"
 import { Pie, PieChart, Label } from "recharts"
 
 import {
@@ -26,7 +25,7 @@ type Props = {
 }
 
 export default function GeralAlunoChart({ data }: Props) {
-  const chartData = [
+  const chartData: Array<{ status: string; label: string; value: number; fill: string }> = [
     {
       status: "fez",
       label: "Fez",
@@ -41,9 +40,7 @@ export default function GeralAlunoChart({ data }: Props) {
     },
   ]
 
-  const total = React.useMemo(() => {
-    return chartData.reduce((acc, curr) => acc + curr.value, 0)
-  }, [data])
+  const total = chartData.reduce((acc: number, curr: { value: number }) => acc + curr.value, 0)
 
   const chartConfig = {
     value: {

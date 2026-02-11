@@ -1,5 +1,41 @@
 import { NextRequest, NextResponse } from "next/server"
+import type { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
+
+type TimelineItem = {
+  data: string
+  fez: number
+  naoFez: number
+  disciplinasFez: string[]
+  disciplinasNaoFez: string[]
+}
+
+type DisciplinaItem = {
+  disciplina: string
+  fez: number
+  naoFez: number
+}
+
+type TimelineAccumulatorItem = {
+  data: string
+  fez: number
+  naoFez: number
+  disciplinasFez: Set<string>
+  disciplinasNaoFez: Set<string>
+}
+
+type GeralResumo = {
+  fez: number
+  naoFez: number
+}
+
+type EntregaAnalytics = Prisma.EntregaSubLicaoGetPayload<{
+  include: {
+    subLicao: {
+      include: { licao: true }
+    }
+  }
+}>
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -13,45 +49,25 @@ export async function GET(req: NextRequest) {
   }
 
   // Buscar entregas do aluno
-  const entregas = await prisma.entregaSubLicao.findMany({
-    where: {
-      alunoId,
-    },
+  const entregas: EntregaAnalytics[] = await prisma.entregaSubLicao.findMany({
+    where: { alunoId },
     include: {
       subLicao: {
-        include: {
-          licao: true,
-        },
-      },
+        include: { licao: true }
+      }
     },
     orderBy: {
-      subLicao: {
-        licao: {
-          dataEnvio: "asc",
-        },
-      },
-    },
+      subLicao: { licao: { dataEnvio: "asc" } }
+    }
   })
 
   // =============================
   // 1️⃣ TIMELINE POR DIA
   // =============================
+  const timelineMap: Record<string, TimelineAccumulatorItem> = {}
 
-  const timelineMap: Record<
-    string,
-    {
-      data: string
-      fez: number
-      naoFez: number
-      disciplinasFez: Set<string>
-      disciplinasNaoFez: Set<string>
-    }
-  > = {}
-
-  entregas.forEach((entrega: typeof entregas[number]) => {
-    const dataEnvio = entrega.subLicao.licao.dataEnvio
-      .toISOString()
-      .split("T")[0]
+  entregas.forEach((entrega: EntregaAnalytics) => {
+    const dataEnvio = entrega.subLicao.licao.dataEnvio.toISOString().split("T")[0]
 
     if (!timelineMap[dataEnvio]) {
       timelineMap[dataEnvio] = {
@@ -59,7 +75,7 @@ export async function GET(req: NextRequest) {
         fez: 0,
         naoFez: 0,
         disciplinasFez: new Set<string>(),
-        disciplinasNaoFez: new Set<string>(),
+        disciplinasNaoFez: new Set<string>()
       }
     }
 
@@ -74,50 +90,37 @@ export async function GET(req: NextRequest) {
     }
   })
 
-
-  const timeline = Object.values(timelineMap).map((item) => ({
+  const timeline: TimelineItem[] = Object.values(timelineMap).map((item: TimelineAccumulatorItem): TimelineItem => ({
     data: item.data,
     fez: item.fez,
     naoFez: item.naoFez,
     disciplinasFez: Array.from(item.disciplinasFez),
-    disciplinasNaoFez: Array.from(item.disciplinasNaoFez),
+    disciplinasNaoFez: Array.from(item.disciplinasNaoFez)
   }))
 
   // =============================
   // 2️⃣ PERFORMANCE POR DISCIPLINA
   // =============================
+  const disciplinaMap: Record<string, DisciplinaItem> = {}
 
-  const disciplinaMap: Record<
-    string,
-    { disciplina: string; fez: number; naoFez: number }
-  > = {}
-
-  entregas.forEach((entrega: typeof entregas[number]) => {
+  entregas.forEach((entrega: EntregaAnalytics) => {
     const disciplina = entrega.subLicao.disciplina
 
     if (!disciplinaMap[disciplina]) {
-      disciplinaMap[disciplina] = {
-        disciplina,
-        fez: 0,
-        naoFez: 0,
-      }
+      disciplinaMap[disciplina] = { disciplina, fez: 0, naoFez: 0 }
     }
 
-    if (entrega.status === "FEZ") {
-      disciplinaMap[disciplina].fez++
-    } else {
-      disciplinaMap[disciplina].naoFez++
-    }
+    if (entrega.status === "FEZ") disciplinaMap[disciplina].fez++
+    else disciplinaMap[disciplina].naoFez++
   })
 
-  const disciplinas = Object.values(disciplinaMap)
+  const disciplinas: DisciplinaItem[] = Object.values(disciplinaMap)
 
   // =============================
   // 3️⃣ RESUMO GERAL
   // =============================
-
   const geral = entregas.reduce(
-    (acc: { fez: number; naoFez: number }, entrega: typeof entregas[number]) => {
+    (acc: GeralResumo, entrega: EntregaAnalytics): GeralResumo => {
       if (entrega.status === "FEZ") acc.fez++
       else acc.naoFez++
       return acc
@@ -125,9 +128,5 @@ export async function GET(req: NextRequest) {
     { fez: 0, naoFez: 0 }
   )
 
-  return NextResponse.json({
-    timeline,
-    disciplinas,
-    geral,
-  })
+  return NextResponse.json({ timeline, disciplinas, geral })
 }

@@ -3,25 +3,31 @@ import Dashboard from "@/components/Dashboard";
 import AlunoAnalyticsSection from "@/components/AlunoAnalyticsSection";
 import LicoesList from "@/components/LicoesList";
 
+type Aluno = {
+  id: string;
+  nome: string;
+};
+
+type Entrega = {
+  alunoId: string;
+  status: "FEZ" | "NAO_FEZ";
+};
+
 export default async function HomePage() {
 
-  const alunos = await prisma.aluno.findMany();
-
-  const entregas = await prisma.entregaSubLicao.findMany();
+  const alunos: Aluno[] = await prisma.aluno.findMany();
+  const entregas: Entrega[] = await prisma.entregaSubLicao.findMany();
 
   // 🔥 Agrupar dados para o gráfico
-  const resumoPorAluno = alunos.map((aluno) => {
+  const resumoPorAluno = alunos.map((aluno: Aluno) => {
+    // Filtrar entregas deste aluno
     const entregasAluno = entregas.filter(
-      (e) => e.alunoId === aluno.id
+      (e: Entrega) => e.alunoId === aluno.id
     );
 
-    const fez = entregasAluno.filter(
-      (e) => e.status === "FEZ"
-    ).length;
-
-    const naoFez = entregasAluno.filter(
-      (e) => e.status === "NAO_FEZ"
-    ).length;
+    // Contar quantos fez e nao fez
+    const fez = entregasAluno.filter((e: Entrega) => e.status === "FEZ").length;
+    const naoFez = entregasAluno.filter((e: Entrega) => e.status === "NAO_FEZ").length;
 
     return {
       nome: aluno.nome,
@@ -40,44 +46,6 @@ export default async function HomePage() {
 
         <AlunoAnalyticsSection />
 
-        {/* 📚 Lista de lições */}
-        {/* <div className="space-y-4">
-          <div className="flex justify-between">
-            <h2 className="text-2xl font-semibold">
-              Lição recentes
-            </h2>
-            <Button><Link href='/licoes'>Criar nova Lição</Link></Button>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-4">
-            {licoes.map((licao) => (
-              <Card
-                key={licao.id}
-                className="rounded-2xl hover:shadow-lg transition"
-              >
-                <CardContent className="p-6 flex justify-between items-center">
-                  <div>
-                    <p className="font-medium">
-                      {licao.titulo}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(
-                        licao.dataEnvio
-                      ).toLocaleDateString()}
-                    </p>
-                  </div>
-
-                  <Link
-                    href={`/licoes/${licao.id}`}
-                    className="text-sm font-medium text-primary hover:underline"
-                  >
-                    Ver detalhes →
-                  </Link>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div> */}
         <LicoesList />
       </div>
     </div>

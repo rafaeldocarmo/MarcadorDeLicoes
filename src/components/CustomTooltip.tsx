@@ -1,10 +1,14 @@
 import type { TooltipProps } from "recharts"
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function CustomTooltip({ active, payload, label }: TooltipProps<any, any>) {
+type TooltipData = {
+  disciplinasNaoFez?: string[]
+  disciplinasFez?: string[]
+}
+
+export function CustomTooltip({ active, payload, label }: TooltipProps<number, string>) {
   if (!active || !payload || !payload.length) return null
 
-  const data = payload[0].payload
+  const data = payload[0].payload as TooltipData
 
   return (
     <div className="rounded-lg border bg-background p-3 shadow-md text-sm space-y-2 min-w-[220px]">

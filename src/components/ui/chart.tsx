@@ -22,6 +22,13 @@ type ChartContextProps = {
   config: ChartConfig
 }
 
+type ChartConfigEntry = [string, ChartConfig[string]]
+type ThemeEntry = [keyof typeof THEMES, string]
+type TooltipPayloadItem = NonNullable<
+  React.ComponentProps<typeof RechartsPrimitive.Tooltip>["payload"]
+>[number]
+type LegendPayloadItem = NonNullable<RechartsPrimitive.LegendProps["payload"]>[number]
+
 const ChartContext = React.createContext<ChartContextProps | null>(null)
 
 function useChart() {
@@ -68,8 +75,9 @@ const ChartContainer = React.forwardRef<
 ChartContainer.displayName = "Chart"
 
 const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
+  const themeEntries = Object.entries(THEMES) as ThemeEntry[]
   const colorConfig = Object.entries(config).filter(
-    ([, config]) => config.theme || config.color
+    ([, itemConfig]: ChartConfigEntry) => itemConfig.theme || itemConfig.color
   )
 
   if (!colorConfig.length) {
@@ -79,12 +87,12 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   return (
     <style
       dangerouslySetInnerHTML={{
-        __html: Object.entries(THEMES)
+        __html: themeEntries
           .map(
-            ([theme, prefix]) => `
+            ([theme, prefix]: ThemeEntry) => `
 ${prefix} [data-chart=${id}] {
 ${colorConfig
-  .map(([key, itemConfig]) => {
+  .map(([key, itemConfig]: ChartConfigEntry) => {
     const color =
       itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ||
       itemConfig.color
@@ -186,8 +194,8 @@ const ChartTooltipContent = React.forwardRef<
         {!nestLabel ? tooltipLabel : null}
         <div className="grid gap-1.5">
           {payload
-            .filter((item) => item.type !== "none")
-            .map((item, index) => {
+            .filter((item: TooltipPayloadItem) => item.type !== "none")
+            .map((item: TooltipPayloadItem, index: number) => {
               const key = `${nameKey || item.name || item.dataKey || "value"}`
               const itemConfig = getPayloadConfigFromPayload(config, item, key)
               const indicatorColor = color || item.payload.fill || item.color
@@ -288,8 +296,8 @@ const ChartLegendContent = React.forwardRef<
         )}
       >
         {payload
-          .filter((item) => item.type !== "none")
-          .map((item) => {
+          .filter((item: LegendPayloadItem) => item.type !== "none")
+          .map((item: LegendPayloadItem) => {
             const key = `${nameKey || item.dataKey || "value"}`
             const itemConfig = getPayloadConfigFromPayload(config, item, key)
 

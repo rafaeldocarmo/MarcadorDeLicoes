@@ -21,6 +21,11 @@ type Props = {
   pageSize?: number;
 };
 
+type LicoesApiResponse = {
+  items: Licao[];
+  totalPages: number;
+};
+
 export default function LicoesList({ pageSize = 6 }: Props) {
   const [licoes, setLicoes] = useState<Licao[]>([]);
   const [search, setSearch] = useState("");
@@ -40,12 +45,12 @@ export default function LicoesList({ pageSize = 6 }: Props) {
       if (materialFilter) params.append("material", materialFilter);
 
       const res = await fetch(`/api/licoes?${params.toString()}`);
-      const data = await res.json();
+      const data: LicoesApiResponse = await res.json();
       setLicoes(data.items);
       setTotalPages(data.totalPages);
     }
     fetchLicoes();
-  }, [page, search, disciplinaFilter, materialFilter]);
+  }, [page, pageSize, search, disciplinaFilter, materialFilter]);
 
   return (
     <div className="space-y-4">
@@ -96,7 +101,7 @@ export default function LicoesList({ pageSize = 6 }: Props) {
 
       {/* Lista de lições */}
       <div className="grid md:grid-cols-2 gap-4">
-        {licoes.map((licao) => (
+        {licoes.map((licao: Licao) => (
           <Card key={licao.id} className="rounded-2xl hover:shadow-lg transition">
             <CardContent className="p-6 flex justify-between items-center">
               <div>
@@ -105,7 +110,7 @@ export default function LicoesList({ pageSize = 6 }: Props) {
                   {new Date(licao.dataEnvio).toLocaleDateString()}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {licao.subLicoes.map((sub) => `${sub.disciplina} (${sub.material})`).join(", ")}
+                  {licao.subLicoes.map((sub: Licao["subLicoes"][number]) => `${sub.disciplina} (${sub.material})`).join(", ")}
                 </p>
               </div>
               <Link
@@ -123,14 +128,14 @@ export default function LicoesList({ pageSize = 6 }: Props) {
       <div className="flex justify-center gap-2 mt-4">
         <Button
           disabled={page <= 1}
-          onClick={() => setPage((p) => p - 1)}
+          onClick={() => setPage((p: number) => p - 1)}
         >
           Anterior
         </Button>
         <span className="px-2 py-1">{page} / {totalPages}</span>
         <Button
           disabled={page >= totalPages}
-          onClick={() => setPage((p) => p + 1)}
+          onClick={() => setPage((p: number) => p + 1)}
         >
           Próxima
         </Button>
