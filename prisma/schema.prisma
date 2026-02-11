@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Turma {
+  id        String   @id @default(cuid())
+  nome      String
+  alunos    Aluno[]
+  licoes    Licao[]
+  createdAt DateTime @default(now())
+}
+
+model Aluno {
+  id        String   @id @default(cuid())
+  nome      String
+  turma     Turma    @relation(fields: [turmaId], references: [id])
+  turmaId   String
+  entregas  EntregaSubLicao[]
+}
+
+
+model Licao {
+  id          String      @id @default(cuid())
+  titulo      String
+  dataEnvio   DateTime
+  dataEntrega DateTime
+  turma       Turma       @relation(fields: [turmaId], references: [id])
+  turmaId     String
+  subLicoes   SubLicao[]
+  createdAt   DateTime    @default(now())
+}
+
+model SubLicao {
+  id         String   @id @default(cuid())
+  disciplina String
+  material   String
+  descricao  String
+  licao      Licao    @relation(fields: [licaoId], references: [id])
+  licaoId    String
+  entregas   EntregaSubLicao[]
+}
+
+enum StatusEntrega {
+  FEZ
+  NAO_FEZ
+}
+
+model EntregaSubLicao {
+  id          String         @id @default(cuid())
+  aluno       Aluno          @relation(fields: [alunoId], references: [id])
+  alunoId     String
+  subLicao    SubLicao       @relation(fields: [subLicaoId], references: [id])
+  subLicaoId  String
+  status      StatusEntrega
+  updatedAt   DateTime       @updatedAt
+
+  @@unique([alunoId, subLicaoId])
+}
+
+
+
+// visão mensal bimestral e anual
