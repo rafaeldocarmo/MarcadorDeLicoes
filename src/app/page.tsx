@@ -2,6 +2,8 @@ import AlunoAnalyticsSection from "@/components/AlunoAnalyticsSection";
 import LicoesList from "@/components/LicoesList";
 import DashboardServer from "./(dashboard)/page";
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
 
 
