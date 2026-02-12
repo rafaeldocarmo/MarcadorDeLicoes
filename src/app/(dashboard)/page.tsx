@@ -1,38 +1,24 @@
-import { prisma } from "@/lib/prisma";
-import Dashboard from "@/components/Dashboard";
+"use client"
 
-type Aluno = {
-  id: string;
-  nome: string;
-};
+import { useEffect, useState } from "react"
+import Dashboard from "@/components/Dashboard"
 
-type Entrega = {
-  alunoId: string;
-  status: "FEZ" | "NAO_FEZ";
-};
+type AlunoResumo = {
+  nome: string
+  fez: number
+  naoFez: number
+}
 
-export default async function DashboardServer() {
+export default function DashboardClient() {
+  const [data, setData] = useState<AlunoResumo[]>([])
 
-  const alunos: Aluno[] = await prisma.aluno.findMany();
-  const entregas: Entrega[] = await prisma.entregaSubLicao.findMany();
+  useEffect(() => {
+    fetch("/api/dashboard")
+      .then(res => res.json())
+      .then((res: AlunoResumo[]) => setData(res))
+  }, [])
 
-  // 🔥 Agrupar dados para o gráfico
-  const resumoPorAluno = alunos.map((aluno: Aluno) => {
-    // Filtrar entregas deste aluno
-    const entregasAluno = entregas.filter(
-      (e: Entrega) => e.alunoId === aluno.id
-    );
+  if (!data.length) return <p>Carregando...</p>
 
-    // Contar quantos fez e nao fez
-    const fez = entregasAluno.filter((e: Entrega) => e.status === "FEZ").length;
-    const naoFez = entregasAluno.filter((e: Entrega) => e.status === "NAO_FEZ").length;
-
-    return {
-      nome: aluno.nome,
-      fez,
-      naoFez,
-    };
-  });
-
-  return <Dashboard initialData={resumoPorAluno} />
+  return <Dashboard initialData={data} />
 }
