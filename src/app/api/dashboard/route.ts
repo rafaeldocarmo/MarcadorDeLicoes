@@ -1,24 +1,61 @@
 import { prisma } from "@/lib/prisma"
-import { NextResponse } from "next/server"
+import { authOptions } from "@/lib/auth"
+import { getServerSession } from "next-auth"
+import { NextRequest, NextResponse } from "next/server"
 
-export async function GET() {
+type ResumoAlunoItem = {
+  nome: string
+  fez: number
+  naoFez: number
+}
+
+export async function GET(req: NextRequest) {
   try {
+    const session = await getServerSession(authOptions)
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Nao autorizado" }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(req.url)
+    const from = searchParams.get("from")
+    const to = searchParams.get("to")
+
+    const shouldFilterByDate = Boolean(from && to)
+    const dateRangeFilter = shouldFilterByDate
+      ? {
+          updatedAt: {
+            gte: new Date(from!),
+            lte: new Date(to!),
+          },
+        }
+      : {}
+
     const alunos = await prisma.aluno.findMany({
-      select: { id: true, nome: true },
+      where: {
+        turma: {
+          userId: session.user.id,
+        },
+      },
+      select: {
+        id: true,
+        nome: true,
+        entregas: {
+          where: dateRangeFilter,
+          select: {
+            status: true,
+          },
+        },
+      },
       orderBy: { nome: "asc" }
     })
 
-    const entregas = await prisma.entregaSubLicao.findMany({
-      select: { alunoId: true, status: true }
-    })
-
     // Agrupar entregas por aluno
-    const resumoPorAluno = alunos.map(aluno => {
-      const entregasAluno = entregas.filter(e => e.alunoId === aluno.id)
+    const resumoPorAluno: ResumoAlunoItem[] = alunos.map(aluno => {
       return {
         nome: aluno.nome,
-        fez: entregasAluno.filter(e => e.status === "FEZ").length,
-        naoFez: entregasAluno.filter(e => e.status === "NAO_FEZ").length
+        fez: aluno.entregas.filter(e => e.status === "FEZ").length,
+        naoFez: aluno.entregas.filter(e => e.status === "NAO_FEZ").length
       }
     })
 

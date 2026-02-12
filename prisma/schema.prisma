@@ -16,6 +16,8 @@ model User {
   sessions      Session[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  turmas        Turma[] 
 }
  
 model Account {
@@ -61,10 +63,13 @@ model VerificationToken {
 model Turma {
   id        String   @id @default(cuid())
   nome      String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   alunos    Aluno[]
   licoes    Licao[]
   createdAt DateTime @default(now())
 }
+
 
 model Aluno {
   id        String   @id @default(cuid())

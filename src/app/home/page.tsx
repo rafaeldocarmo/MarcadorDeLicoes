@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import Dashboard from "@/components/Dashboard";
+import NovaTurmaForm from "@/components/NovaTurmaForm";
 
 export const dynamic = "force-dynamic";
 
@@ -19,11 +20,13 @@ export default async function HomePage() {
       <div className="max-w-7xl mx-auto space-y-10">
         <h1 className="text-4xl font-bold">Dashboard</h1>
 
-        <Dashboard />
+        {/* <NovaTurmaForm /> */}
 
+        <Dashboard />
+        {/* 
         <AlunoAnalyticsSection />
 
-        <LicoesList />
+        <LicoesList /> */}
       </div>
     </div>
   );

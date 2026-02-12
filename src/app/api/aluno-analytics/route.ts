@@ -58,9 +58,8 @@ export async function GET(req: NextRequest) {
   // Buscar entregas do aluno
   const entregas: EntregaAnalytics[] = await getEntregasAluno(alunoId)
 
-  // =============================
-  // 1️⃣ TIMELINE POR DIA
-  // =============================
+
+  // TIMELINE POR DIA
   const timelineMap: Record<string, TimelineAccumulatorItem> = {}
 
   entregas.forEach((entrega: EntregaAnalytics) => {
@@ -95,9 +94,8 @@ export async function GET(req: NextRequest) {
     disciplinasNaoFez: Array.from(item.disciplinasNaoFez)
   }))
 
-  // =============================
-  // 2️⃣ PERFORMANCE POR DISCIPLINA
-  // =============================
+
+  // PERFORMANCE POR DISCIPLINA
   const disciplinaMap: Record<string, DisciplinaItem> = {}
 
   entregas.forEach((entrega: EntregaAnalytics) => {
@@ -113,9 +111,7 @@ export async function GET(req: NextRequest) {
 
   const disciplinas: DisciplinaItem[] = Object.values(disciplinaMap)
 
-  // =============================
-  // 3️⃣ RESUMO GERAL
-  // =============================
+  // RESUMO GERAL
   const geral = entregas.reduce(
     (acc: GeralResumo, entrega: EntregaAnalytics): GeralResumo => {
       if (entrega.status === "FEZ") acc.fez++

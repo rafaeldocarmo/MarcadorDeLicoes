@@ -29,41 +29,65 @@ export default function Dashboard() {
   const [data, setData] = useState<ResumoAlunoItem[]>([])
   const [loading, setLoading] = useState(true)
 
-  // 🔹 Busca inicial
+  async function loadDashboard(from?: Date, to?: Date, showLoading = true) {
+    if (showLoading) {
+      setLoading(true)
+    }
+
+    const params = new URLSearchParams()
+    if (from && to) {
+      params.set("from", from.toISOString())
+      params.set("to", to.toISOString())
+    }
+
+    const queryString = params.toString()
+    const endpoint = queryString ? `/api/dashboard?${queryString}` : "/api/dashboard"
+
+    const res = await fetch(endpoint)
+
+    if (!res.ok) {
+      setData([])
+      setLoading(false)
+      return
+    }
+
+    const payload: ResumoAlunoItem[] = await res.json()
+    setData(payload)
+    setLoading(false)
+  }
+
   useEffect(() => {
-    fetch("/api/dashboard")
-      .then(res => res.json())
-      .then((res: ResumoAlunoItem[]) => {
-        setData(res)
+    const fetchInitialData = async () => {
+      const res = await fetch("/api/dashboard")
+
+      if (!res.ok) {
+        setData([])
         setLoading(false)
-      })
+        return
+      }
+
+      const payload: ResumoAlunoItem[] = await res.json()
+      setData(payload)
+      setLoading(false)
+    }
+
+    void fetchInitialData()
   }, [])
 
-  // 🔹 Filtro por período
   async function handleFilter() {
     if (!date?.from || !date?.to) return
-
-    setLoading(true)
-
-    const res = await fetch(
-      `/api/resumo?from=${date.from.toISOString()}&to=${date.to.toISOString()}`
-    )
-
-    const filtered: ResumoAlunoItem[] = await res.json()
-    setData(filtered)
-    setLoading(false)
+    await loadDashboard(date.from, date.to)
   }
 
   if (loading) return <p>Carregando...</p>
 
   return (
     <div className="space-y-6">
-      {/* Filtro */}
       <div className="flex items-center gap-4">
         <Popover>
           <PopoverTrigger asChild>
             <Button variant="outline">
-              Selecionar período
+              Selecionar periodo
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0">
@@ -81,7 +105,6 @@ export default function Dashboard() {
         </Button>
       </div>
 
-      {/* Gráfico */}
       <ResumoChart data={data} />
     </div>
   )
