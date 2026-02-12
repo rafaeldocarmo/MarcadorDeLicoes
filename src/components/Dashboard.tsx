@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { DateRange } from "react-day-picker"
 import { addDays } from "date-fns"
 
@@ -19,27 +19,42 @@ export type ResumoAlunoItem = {
   fez: number
   naoFez: number
 }
-type Props = {
-  initialData: ResumoAlunoItem[]
-}
 
-export default function Dashboard({ initialData }: Props) {
+export default function Dashboard() {
   const [date, setDate] = useState<DateRange | undefined>({
     from: addDays(new Date(), -30),
     to: new Date(),
   })
 
-  const [data, setData] = useState<ResumoAlunoItem[]>(initialData)
+  const [data, setData] = useState<ResumoAlunoItem[]>([])
+  const [loading, setLoading] = useState(true)
 
+  // 🔹 Busca inicial
+  useEffect(() => {
+    fetch("/api/dashboard")
+      .then(res => res.json())
+      .then((res: ResumoAlunoItem[]) => {
+        setData(res)
+        setLoading(false)
+      })
+  }, [])
+
+  // 🔹 Filtro por período
   async function handleFilter() {
     if (!date?.from || !date?.to) return
+
+    setLoading(true)
 
     const res = await fetch(
       `/api/resumo?from=${date.from.toISOString()}&to=${date.to.toISOString()}`
     )
+
     const filtered: ResumoAlunoItem[] = await res.json()
     setData(filtered)
+    setLoading(false)
   }
+
+  if (loading) return <p>Carregando...</p>
 
   return (
     <div className="space-y-6">
