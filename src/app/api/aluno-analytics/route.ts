@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { authOptions } from "@/lib/auth"
+import { getServerSession } from "next-auth"
 
 type TimelineItem = {
   data: string
@@ -45,6 +47,12 @@ function getEntregasAluno(alunoId: string) {
 type EntregaAnalytics = Awaited<ReturnType<typeof getEntregasAluno>>[number]
 
 export async function GET(req: NextRequest) {
+  const session = await getServerSession(authOptions)
+
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Nao autorizado" }, { status: 401 })
+  }
+
   const { searchParams } = new URL(req.url)
   const alunoId = searchParams.get("id")
 
@@ -55,8 +63,25 @@ export async function GET(req: NextRequest) {
     )
   }
 
-  // Buscar entregas do aluno
-  const entregas: EntregaAnalytics[] = await getEntregasAluno(alunoId)
+  const aluno = await prisma.aluno.findFirst({
+    where: {
+      id: alunoId,
+      turma: {
+        userId: session.user.id,
+      },
+    },
+    select: { id: true },
+  })
+
+  if (!aluno) {
+    return NextResponse.json(
+      { error: "Aluno nao encontrado" },
+      { status: 404 }
+    )
+  }
+
+  // Buscar entregas apenas do aluno pertencente ao usuario autenticado
+  const entregas: EntregaAnalytics[] = await getEntregasAluno(aluno.id)
 
 
   // TIMELINE POR DIA
