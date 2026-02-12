@@ -1,4 +1,4 @@
-import LoginBtn from "@/components/LoginBtn";
+import { LoginForm } from "@/components/login-form"
 
 export const dynamic = "force-dynamic";
 
@@ -6,9 +6,9 @@ export default async function HomePage() {
 
 
   return (
-    <div className="min-h-screen bg-muted/40 p-8">
-      <div className="max-w-7xl mx-auto space-y-10">
-        <LoginBtn />
+    <div className="flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
+      <div className="flex w-full max-w-sm flex-col gap-6">
+        <LoginForm />
       </div>
     </div>
   );

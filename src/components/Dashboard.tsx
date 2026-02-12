@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import { DateRange } from "react-day-picker"
 import { addDays } from "date-fns"
 
@@ -83,25 +84,36 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline">
-              Selecionar periodo
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
-            <Calendar
-              mode="range"
-              selected={date}
-              onSelect={setDate}
-              numberOfMonths={2}
-            />
-          </PopoverContent>
-        </Popover>
 
-        <Button onClick={handleFilter}>
-          Filtrar
+      <h1 className="text-[1.5rem] font-semibold">Visão da classe</h1>
+
+
+      <div className="flex items-center justify-between gap-4">
+        
+        <div className="flex items-center gap-4">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline">
+                Selecionar periodo
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar
+                mode="range"
+                selected={date}
+                onSelect={setDate}
+                numberOfMonths={2}
+              />
+            </PopoverContent>
+          </Popover>
+
+          <Button onClick={handleFilter}>
+            Filtrar
+          </Button>
+        </div>
+
+        <Button asChild variant="outline">
+          <Link href="/home/editar-sala">Alterar sala</Link>
         </Button>
       </div>
 

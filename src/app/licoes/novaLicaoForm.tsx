@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -21,7 +21,11 @@ type SubLicaoForm = {
   descricao: string;
 };
 
-export default function NovaLicaoForm() {
+type Props = {
+  hasLicoes: boolean;
+};
+
+export default function NovaLicaoForm({ hasLicoes }: Props) {
   const router = useRouter();
   const [subLicoes, setSubLicoes] = useState<SubLicaoForm[]>([{ disciplina: "", material: "", descricao: "" }]);
   const [isPending, startTransition] = useTransition();
@@ -73,6 +77,11 @@ export default function NovaLicaoForm() {
       <Card className="w-full max-w-3xl rounded-2xl shadow-xl">
         <CardHeader>
           <CardTitle className="text-2xl font-semibold">Criar Nova Lição</CardTitle>
+          {!hasLicoes ? (
+            <CardDescription>
+              Esta será sua primeira lição. Crie uma lição para começar a visualizar os dados da sala.
+            </CardDescription>
+          ) : null}
         </CardHeader>
 
         <CardContent>
@@ -178,7 +187,9 @@ export default function NovaLicaoForm() {
             </div>
 
             <div className="flex justify-between">
-              <Button className="rounded-2xl px-6" variant="destructive"><Link href='/home'>Cancelar</Link></Button>
+              {hasLicoes ? (
+                <Button className="rounded-2xl px-6" variant="destructive"><Link href='/home'>Cancelar</Link></Button>
+              ) : <span />}
               <Button disabled={isPending} className="rounded-2xl px-6">{isPending ? "Criando..." : "Criar Lição"}</Button>
             </div>
           </form>

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import Dashboard from "@/components/Dashboard";
 import NovaTurmaForm from "@/components/NovaTurmaForm";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -14,13 +15,17 @@ export default async function HomePage() {
 
     if(!session) redirect('/')
 
+    const turma = await prisma.turma.findFirst({
+      where: { userId: session.user.id },
+      select: { id: true },
+    })
+
 
   return (
     <div className="min-h-screen bg-muted/40 p-8">
       <div className="max-w-7xl mx-auto space-y-10">
-        <h1 className="text-4xl font-bold">Dashboard</h1>
 
-        {/* <NovaTurmaForm /> */}
+        {!turma ? <NovaTurmaForm /> : null}
 
         <Dashboard />
         

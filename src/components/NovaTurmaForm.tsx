@@ -2,16 +2,29 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
-export default function NovaTurmaForm() {
+type Props = {
+  mode?: "create" | "edit"
+  initialNome?: string
+  initialAlunos?: string[]
+}
+
+export default function NovaTurmaForm({
+  mode = "create",
+  initialNome = "",
+  initialAlunos = [""],
+}: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
-  const [alunos, setAlunos] = useState<string[]>([""])
+  const [nome, setNome] = useState(initialNome)
+  const [alunos, setAlunos] = useState<string[]>(
+    initialAlunos.length > 0 ? initialAlunos : [""]
+  )
 
   function adicionarAluno() {
     setAlunos(prev => [...prev, ""])
@@ -28,23 +41,21 @@ export default function NovaTurmaForm() {
   }
 
   async function handleSubmit(formData: FormData) {
-    const nome = formData.get("nome") as string
-
     startTransition(async () => {
       const res = await fetch("/api/turmas", {
-        method: "POST",
+        method: mode === "edit" ? "PUT" : "POST",
         headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          nome,
+          nome: nome || (formData.get("nome") as string),
           alunos: alunos.filter(a => a.trim() !== "")
         })
       })
 
       if (res.ok) {
-        const turma = await res.json()
-        router.push(`/turmas/${turma.id}`)
+        router.push("/home")
+        router.refresh()
       }
     })
   }
@@ -52,10 +63,15 @@ export default function NovaTurmaForm() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/40 p-6">
       <Card className="w-full max-w-2xl rounded-2xl shadow-xl">
-        <CardHeader>
+        <CardHeader className="text-center">
           <CardTitle className="text-2xl font-semibold">
-            Criar Nova Turma
+            {mode === "edit" ? "Editar Sala" : "Criar Nova Turma"}
           </CardTitle>
+          <CardDescription>
+            {mode === "edit"
+              ? "Atualize o nome da sala e os alunos."
+              : "Bem-vindo! Para iniciar o uso da aplicacao, voce precisa criar uma turma primeiro."}
+          </CardDescription>
         </CardHeader>
 
         <CardContent>
@@ -63,7 +79,13 @@ export default function NovaTurmaForm() {
 
             <div className="space-y-2">
               <Label htmlFor="nome">Nome da Turma</Label>
-              <Input id="nome" name="nome" required />
+              <Input
+                id="nome"
+                name="nome"
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+                required
+              />
             </div>
 
             <div className="space-y-4">
@@ -100,7 +122,7 @@ export default function NovaTurmaForm() {
 
             <div className="flex justify-end">
               <Button disabled={isPending}>
-                {isPending ? "Criando..." : "Criar Turma"}
+                {isPending ? "Salvando..." : mode === "edit" ? "Salvar Sala" : "Criar Turma"}
               </Button>
             </div>
 

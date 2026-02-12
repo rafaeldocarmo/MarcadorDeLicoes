@@ -66,6 +66,9 @@ export default function AlunoAnalyticsClient({ alunos }: Props) {
 
   return (
     <div className="space-y-6">
+
+      <h1 className="text-[1.5rem] font-semibold">Visão por Aluno</h1>
+
       <Select value={selectedAluno} onValueChange={setSelectedAluno}>
         <SelectTrigger className="w-[250px]">
           <SelectValue placeholder="Selecionar aluno" />
