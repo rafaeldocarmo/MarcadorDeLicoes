@@ -45,6 +45,12 @@ export default function LicoesList({ pageSize = 6 }: Props) {
       if (materialFilter) params.append("material", materialFilter);
 
       const res = await fetch(`/api/licoes?${params.toString()}`);
+      if (!res.ok) {
+        setLicoes([]);
+        setTotalPages(1);
+        return;
+      }
+
       const data: LicoesApiResponse = await res.json();
       setLicoes(data.items);
       setTotalPages(data.totalPages);

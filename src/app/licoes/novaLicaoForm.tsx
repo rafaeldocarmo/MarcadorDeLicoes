@@ -1,12 +1,11 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { criarLicao } from "./actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 // Shadcn UI components
@@ -23,6 +22,7 @@ type SubLicaoForm = {
 };
 
 export default function NovaLicaoForm() {
+  const router = useRouter();
   const [subLicoes, setSubLicoes] = useState<SubLicaoForm[]>([{ disciplina: "", material: "", descricao: "" }]);
   const [isPending, startTransition] = useTransition();
 
@@ -48,14 +48,23 @@ export default function NovaLicaoForm() {
 
   function handleSubmit(formData: FormData) {
     startTransition(async () => {
-      const licao = await criarLicao({
+      const res = await fetch("/api/nova-licao", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
         titulo: formData.get("titulo") as string,
         dataEnvio: dataEnvio.toISOString(),
         dataEntrega: dataEntrega.toISOString(),
-        turmaId: '1',
         subLicoes,
+        }),
       });
-      if (licao.id) redirect(`/licoes/${licao.id}`);
+
+      if (!res.ok) return;
+
+      const licao = await res.json();
+      if (licao.id) router.push(`/licoes/${licao.id}`);
     });
   }
 
@@ -169,7 +178,7 @@ export default function NovaLicaoForm() {
             </div>
 
             <div className="flex justify-between">
-              <Button className="rounded-2xl px-6" variant="destructive"><Link href='/'>Cancelar</Link></Button>
+              <Button className="rounded-2xl px-6" variant="destructive"><Link href='/home'>Cancelar</Link></Button>
               <Button disabled={isPending} className="rounded-2xl px-6">{isPending ? "Criando..." : "Criar Lição"}</Button>
             </div>
           </form>

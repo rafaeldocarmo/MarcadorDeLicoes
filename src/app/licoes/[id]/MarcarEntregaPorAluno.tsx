@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { salvarEntregas } from "./actions";
+import { useRouter } from "next/navigation";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -43,6 +43,7 @@ export default function MarcarEntregaPorAluno({
   licao,
   entregas,
 }: Props) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   // 🔥 Estado local editável
@@ -82,7 +83,19 @@ export default function MarcarEntregaPorAluno({
     );
 
     startTransition(async () => {
-      await salvarEntregas(payload, licao.id);
+      const res = await fetch("/api/salvar-entregas", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          licaoId: licao.id,
+          entregas: payload,
+        }),
+      });
+
+      if (!res.ok) return;
+      router.refresh();
     });
   }
 
@@ -149,7 +162,7 @@ export default function MarcarEntregaPorAluno({
         </div>
         
         <div className="flex justify-between">
-          <Button className="rounded-2xl px-6" variant="outline"><Link href='/'>Voltar para Home</Link></Button>   
+          <Button className="rounded-2xl px-6" variant="outline"><Link href='/home'>Voltar para Home</Link></Button>   
           <Button
             onClick={handleSalvar}
             disabled={isPending }

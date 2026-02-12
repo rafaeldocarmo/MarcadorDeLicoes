@@ -23,10 +23,10 @@ export default async function HomePage() {
         {/* <NovaTurmaForm /> */}
 
         <Dashboard />
-        {/* 
+        
         <AlunoAnalyticsSection />
 
-        <LicoesList /> */}
+        <LicoesList />
       </div>
     </div>
   );
