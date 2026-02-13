@@ -6,6 +6,7 @@ import { DateRange } from "react-day-picker"
 import { addDays } from "date-fns"
 import {
   ColumnDef,
+  HeaderContext,
   SortingState,
   flexRender,
   getCoreRowModel,
@@ -99,7 +100,7 @@ export default function Dashboard() {
     const baseColumns: ColumnDef<DashboardRow>[] = [
       {
         accessorKey: "nome",
-        header: ({ column }) => (
+        header: ({ column }: HeaderContext<DashboardRow, unknown>) => (
           <Button
             variant="ghost"
             className="h-8 px-2 justify-start"
@@ -114,7 +115,7 @@ export default function Dashboard() {
       ...disciplinas.map((disciplina) => ({
         id: disciplina,
         accessorFn: (row: DashboardRow) => row.porDisciplina[disciplina]?.fez ?? 0,
-        header: ({ column }) => (
+        header: ({ column }: HeaderContext<DashboardRow, unknown>) => (
           <Button
             variant="ghost"
             className="h-8 px-2 justify-center w-full"
@@ -132,7 +133,7 @@ export default function Dashboard() {
       {
         id: "total",
         accessorFn: (row) => row.totalFez,
-        header: ({ column }) => (
+        header: ({ column }: HeaderContext<DashboardRow, unknown>) => (
           <Button
             variant="ghost"
             className="h-8 px-2 justify-center w-full"
