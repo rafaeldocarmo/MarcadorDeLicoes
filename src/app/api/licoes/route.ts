@@ -23,6 +23,11 @@ export async function GET(req: NextRequest) {
     const disciplina = url.searchParams.get("disciplina");
     const material = url.searchParams.get("material");
 
+    const turma = await prisma.turma.findFirst({
+      where: { userId: session.user.id },
+      select: { disciplinas: true, materiais: true },
+    });
+
     const where: LicaoWhereInput = {
       turma: {
         userId: session.user.id,
@@ -51,6 +56,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       items,
       totalPages: Math.ceil(total / pageSize),
+      disciplinasDisponiveis: turma?.disciplinas ?? [],
+      materiaisDisponiveis: turma?.materiais ?? [],
     });
   } catch (error) {
     console.error(error);

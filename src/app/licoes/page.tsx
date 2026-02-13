@@ -1,8 +1,8 @@
-import NovaLicaoForm from "./novaLicaoForm";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import NovaLicaoForm from "./novaLicaoForm"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
+import { redirect } from "next/navigation"
+import { prisma } from "@/lib/prisma"
 
 export default async function Page() {
   const session = await getServerSession(authOptions)
@@ -11,13 +11,30 @@ export default async function Page() {
     redirect("/")
   }
 
-  const totalLicoes = await prisma.licao.count({
+  const turma = await prisma.turma.findFirst({
     where: {
-      turma: {
-        userId: session.user.id,
-      },
+      userId: session.user.id,
+    },
+    select: {
+      id: true,
+      disciplinas: true,
+      materiais: true,
     },
   })
 
-  return <NovaLicaoForm hasLicoes={totalLicoes > 0} />;
+  const totalLicoes = turma
+    ? await prisma.licao.count({
+        where: {
+          turmaId: turma.id,
+        },
+      })
+    : 0
+
+  return (
+    <NovaLicaoForm
+      hasLicoes={totalLicoes > 0}
+      disciplinas={turma?.disciplinas ?? []}
+      materiais={turma?.materiais ?? []}
+    />
+  )
 }

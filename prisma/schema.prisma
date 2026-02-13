@@ -63,6 +63,8 @@ model VerificationToken {
 model Turma {
   id        String   @id @default(cuid())
   nome      String
+  disciplinas String[] @default([])
+  materiais String[] @default([])
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   alunos    Aluno[]

@@ -1,56 +1,83 @@
-"use client";
+"use client"
 
-import { useState, useTransition } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useState, useTransition } from "react"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
 
-// Shadcn UI components
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { format } from "date-fns";
-import { Input } from "@/components/ui/input";
+import { Calendar } from "@/components/ui/calendar"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { addDays, format } from "date-fns"
+import { Input } from "@/components/ui/input"
 
 type SubLicaoForm = {
-  disciplina: string;
-  material: string;
-  descricao: string;
-};
+  disciplina: string
+  material: string
+  descricao: string
+}
 
 type Props = {
-  hasLicoes: boolean;
-};
+  hasLicoes: boolean
+  disciplinas: string[]
+  materiais: string[]
+}
 
-export default function NovaLicaoForm({ hasLicoes }: Props) {
-  const router = useRouter();
-  const [subLicoes, setSubLicoes] = useState<SubLicaoForm[]>([{ disciplina: "", material: "", descricao: "" }]);
-  const [isPending, startTransition] = useTransition();
+export default function NovaLicaoForm({
+  hasLicoes,
+  disciplinas,
+  materiais,
+}: Props) {
+  const router = useRouter()
+  const [subLicoes, setSubLicoes] = useState<SubLicaoForm[]>([
+    { disciplina: "", material: "", descricao: "" },
+  ])
+  const [isPending, startTransition] = useTransition()
 
-  const [dataEnvio, setDataEnvio] = useState(new Date());
-  // eslint-disable-next-line react-hooks/purity
-  const [dataEntrega, setDataEntrega] = useState(new Date(Date.now() + 24 * 60 * 60 * 1000));
+  const [dataEnvio, setDataEnvio] = useState(new Date())
+  const [dataEntrega, setDataEntrega] = useState(() => addDays(new Date(), 1))
 
-  // Exemplo de opções fixas (pode vir da API)
-  const disciplinas = ["Matemática", "Português", "Ciências", "História", "Geografia"];
-  const materiais = ["Livro", "Caderno", "Exercícios", "Vídeo", "Slides"];
+  const hasCatalogo = disciplinas.length > 0 && materiais.length > 0
 
   function adicionarSubLicao() {
-    setSubLicoes((prev: SubLicaoForm[]) => [...prev, { disciplina: "", material: "", descricao: "" }]);
+    setSubLicoes((prev) => [
+      ...prev,
+      { disciplina: "", material: "", descricao: "" },
+    ])
   }
 
   function removerSubLicao(index: number) {
-    setSubLicoes((prev: SubLicaoForm[]) => prev.filter((_: SubLicaoForm, i: number) => i !== index));
+    setSubLicoes((prev) => prev.filter((_, i) => i !== index))
   }
 
   function atualizarSubLicao(index: number, field: keyof SubLicaoForm, value: string) {
-    setSubLicoes((prev: SubLicaoForm[]) => prev.map((sub: SubLicaoForm, i: number): SubLicaoForm => (i === index ? { ...sub, [field]: value } : sub)));
+    setSubLicoes((prev) =>
+      prev.map((sub, i) => (i === index ? { ...sub, [field]: value } : sub))
+    )
   }
 
   function handleSubmit(formData: FormData) {
+    if (!hasCatalogo) return
+
     startTransition(async () => {
       const res = await fetch("/api/nova-licao", {
         method: "POST",
@@ -58,28 +85,33 @@ export default function NovaLicaoForm({ hasLicoes }: Props) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-        titulo: formData.get("titulo") as string,
-        dataEnvio: dataEnvio.toISOString(),
-        dataEntrega: dataEntrega.toISOString(),
-        subLicoes,
+          titulo: formData.get("titulo") as string,
+          dataEnvio: dataEnvio.toISOString(),
+          dataEntrega: dataEntrega.toISOString(),
+          subLicoes,
         }),
-      });
+      })
 
-      if (!res.ok) return;
+      if (!res.ok) return
 
-      const licao = await res.json();
-      if (licao.id) router.push(`/licoes/${licao.id}`);
-    });
+      const licao = await res.json()
+      if (licao.id) router.push(`/licoes/${licao.id}`)
+    })
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/40 p-6">
       <Card className="w-full max-w-3xl rounded-2xl shadow-xl">
         <CardHeader>
-          <CardTitle className="text-2xl font-semibold">Criar Nova Lição</CardTitle>
+          <CardTitle className="text-2xl font-semibold">Criar Nova Licao</CardTitle>
           {!hasLicoes ? (
             <CardDescription>
-              Esta será sua primeira lição. Crie uma lição para começar a visualizar os dados da sala.
+              Esta sera sua primeira licao. Crie uma licao para comecar a visualizar os dados da sala.
+            </CardDescription>
+          ) : null}
+          {!hasCatalogo ? (
+            <CardDescription>
+              Antes de criar licoes, cadastre disciplinas e materiais na tela de editar sala.
             </CardDescription>
           ) : null}
         </CardHeader>
@@ -87,12 +119,11 @@ export default function NovaLicaoForm({ hasLicoes }: Props) {
         <CardContent>
           <form action={handleSubmit} className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="space-y-1 md:col-span-2">
-              <Label htmlFor="titulo">Título</Label>
-              <Input type="text" id="titulo" name="titulo" required className="input w-full" />
-            </div>
+              <div className="space-y-1 md:col-span-2">
+                <Label htmlFor="titulo">Titulo</Label>
+                <Input type="text" id="titulo" name="titulo" required className="input w-full" />
+              </div>
 
-              {/* Data de Envio */}
               <div className="space-y-1">
                 <Label>Data de Envio</Label>
                 <Popover>
@@ -111,7 +142,6 @@ export default function NovaLicaoForm({ hasLicoes }: Props) {
                 </Popover>
               </div>
 
-              {/* Data de Entrega */}
               <div className="space-y-1">
                 <Label>Data de Entrega</Label>
                 <Popover>
@@ -131,22 +161,29 @@ export default function NovaLicaoForm({ hasLicoes }: Props) {
               </div>
             </div>
 
-            {/* Sublições */}
             <div className="space-y-6">
-              <h2 className="text-xl font-semibold">Sublições</h2>
-              {subLicoes.map((sub: SubLicaoForm, index: number) => (
-                <div key={index} className="relative rounded-2xl border bg-background p-6 shadow-sm space-y-4">
-                  
+              <h2 className="text-xl font-semibold">Sublicoes</h2>
+              {subLicoes.map((sub, index) => (
+                <div
+                  key={index}
+                  className="relative rounded-2xl border bg-background p-6 shadow-sm space-y-4"
+                >
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Disciplina</Label>
-                      <Select value={sub.disciplina} onValueChange={(v) => atualizarSubLicao(index, "disciplina", v)} required>
+                      <Select
+                        value={sub.disciplina}
+                        onValueChange={(v) => atualizarSubLicao(index, "disciplina", v)}
+                        required
+                      >
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Selecione a disciplina" />
                         </SelectTrigger>
                         <SelectContent>
-                          {disciplinas.map((d: string) => (
-                            <SelectItem key={d} value={d}>{d}</SelectItem>
+                          {disciplinas.map((d) => (
+                            <SelectItem key={d} value={d}>
+                              {d}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -154,27 +191,41 @@ export default function NovaLicaoForm({ hasLicoes }: Props) {
 
                     <div className="space-y-2">
                       <Label>Material</Label>
-                      <Select value={sub.material} onValueChange={(v) => atualizarSubLicao(index, "material", v)} required>
+                      <Select
+                        value={sub.material}
+                        onValueChange={(v) => atualizarSubLicao(index, "material", v)}
+                        required
+                      >
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Selecione o material" />
                         </SelectTrigger>
                         <SelectContent>
-                          {materiais.map((m: string) => (
-                            <SelectItem key={m} value={m}>{m}</SelectItem>
+                          {materiais.map((m) => (
+                            <SelectItem key={m} value={m}>
+                              {m}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
-                    
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Descrição</Label>
-                    <Textarea value={sub.descricao} onChange={(e) => atualizarSubLicao(index, "descricao", e.target.value)} required />
+                    <Label>Descricao</Label>
+                    <Textarea
+                      value={sub.descricao}
+                      onChange={(e) => atualizarSubLicao(index, "descricao", e.target.value)}
+                      required
+                    />
                   </div>
                   {subLicoes.length > 1 && (
                     <div className="flex justify-end">
-                      <Button type="button" variant="destructive" size="sm" onClick={() => removerSubLicao(index)}>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => removerSubLicao(index)}
+                      >
                         Remover
                       </Button>
                     </div>
@@ -182,19 +233,25 @@ export default function NovaLicaoForm({ hasLicoes }: Props) {
                 </div>
               ))}
               <Button type="button" variant="outline" onClick={adicionarSubLicao}>
-                + Adicionar Sublição
+                + Adicionar Sublicao
               </Button>
             </div>
 
             <div className="flex justify-between">
               {hasLicoes ? (
-                <Button className="rounded-2xl px-6" variant="destructive"><Link href='/home'>Cancelar</Link></Button>
-              ) : <span />}
-              <Button disabled={isPending} className="rounded-2xl px-6">{isPending ? "Criando..." : "Criar Lição"}</Button>
+                <Button className="rounded-2xl px-6" variant="destructive">
+                  <Link href="/home">Cancelar</Link>
+                </Button>
+              ) : (
+                <span />
+              )}
+              <Button disabled={isPending || !hasCatalogo} className="rounded-2xl px-6">
+                {isPending ? "Criando..." : "Criar Licao"}
+              </Button>
             </div>
           </form>
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }

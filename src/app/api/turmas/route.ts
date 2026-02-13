@@ -3,34 +3,52 @@ import { prisma } from "@/lib/prisma"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 
+type TurmaPayload = {
+  nome?: string
+  alunos?: string[]
+  disciplinas?: string[]
+  materiais?: string[]
+}
+
+function normalizeList(values: string[] = []) {
+  return Array.from(
+    new Set(values.map((item) => item.trim()).filter((item) => item.length > 0))
+  )
+}
+
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions)
 
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
+    return NextResponse.json({ error: "Nao autorizado" }, { status: 401 })
   }
 
-  const body = await req.json()
+  const body = (await req.json()) as TurmaPayload
 
-  const { nome, alunos } = body
+  const nome = body.nome?.trim() ?? ""
+  const alunos = normalizeList(body.alunos)
+  const disciplinas = normalizeList(body.disciplinas)
+  const materiais = normalizeList(body.materiais)
 
-  if (!nome || !alunos?.length) {
-    return NextResponse.json({ error: "Dados inválidos" }, { status: 400 })
+  if (!nome || !alunos.length || !disciplinas.length || !materiais.length) {
+    return NextResponse.json({ error: "Dados invalidos" }, { status: 400 })
   }
 
   const turma = await prisma.turma.create({
     data: {
       nome,
       userId: session.user.id,
+      disciplinas,
+      materiais,
       alunos: {
-        create: alunos.map((nome: string) => ({
-          nome
-        }))
-      }
+        create: alunos.map((nomeAluno: string) => ({
+          nome: nomeAluno,
+        })),
+      },
     },
     include: {
-      alunos: true
-    }
+      alunos: true,
+    },
   })
 
   return NextResponse.json(turma)
@@ -40,14 +58,18 @@ export async function PUT(req: Request) {
   const session = await getServerSession(authOptions)
 
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "NÃ£o autorizado" }, { status: 401 })
+    return NextResponse.json({ error: "Nao autorizado" }, { status: 401 })
   }
 
-  const body = await req.json()
-  const { nome, alunos } = body
+  const body = (await req.json()) as TurmaPayload
 
-  if (!nome || !alunos?.length) {
-    return NextResponse.json({ error: "Dados invÃ¡lidos" }, { status: 400 })
+  const nome = body.nome?.trim() ?? ""
+  const alunos = normalizeList(body.alunos)
+  const disciplinas = normalizeList(body.disciplinas)
+  const materiais = normalizeList(body.materiais)
+
+  if (!nome || !alunos.length || !disciplinas.length || !materiais.length) {
+    return NextResponse.json({ error: "Dados invalidos" }, { status: 400 })
   }
 
   const turma = await prisma.turma.findFirst({
@@ -56,24 +78,18 @@ export async function PUT(req: Request) {
   })
 
   if (!turma) {
-    return NextResponse.json({ error: "Turma nÃ£o encontrada" }, { status: 404 })
+    return NextResponse.json({ error: "Turma nao encontrada" }, { status: 404 })
   }
 
-  const alunosNormalizados: string[] = Array.from(
-    new Set(
-      (alunos as string[])
-        .map((aluno: string) => aluno.trim())
-        .filter((aluno: string) => aluno.length > 0)
-    )
-  )
-
   const nomesAtuais = new Set(turma.alunos.map((aluno: { nome: string }) => aluno.nome))
-  const alunosParaCriar = alunosNormalizados.filter((nomeAluno: string) => !nomesAtuais.has(nomeAluno))
+  const alunosParaCriar = alunos.filter((nomeAluno: string) => !nomesAtuais.has(nomeAluno))
 
   const turmaAtualizada = await prisma.turma.update({
     where: { id: turma.id },
     data: {
       nome,
+      disciplinas,
+      materiais,
       alunos: {
         create: alunosParaCriar.map((nomeAluno: string) => ({ nome: nomeAluno })),
       },

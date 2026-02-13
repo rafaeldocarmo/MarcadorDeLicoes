@@ -30,6 +30,8 @@ export default async function EditarSalaPage() {
       mode="edit"
       initialNome={turma.nome}
       initialAlunos={turma.alunos.map((aluno) => aluno.nome)}
+      initialDisciplinas={turma.disciplinas}
+      initialMateriais={turma.materiais}
     />
   );
 }

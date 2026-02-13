@@ -5,8 +5,9 @@ import { NextRequest, NextResponse } from "next/server"
 
 type ResumoAlunoItem = {
   nome: string
-  fez: number
-  naoFez: number
+  totalFez: number
+  totalGeral: number
+  porDisciplina: Record<string, { fez: number; total: number }>
 }
 
 export async function GET(req: NextRequest) {
@@ -31,6 +32,15 @@ export async function GET(req: NextRequest) {
         }
       : {}
 
+    const turma = await prisma.turma.findFirst({
+      where: {
+        userId: session.user.id,
+      },
+      select: {
+        disciplinas: true,
+      },
+    })
+
     const alunos = await prisma.aluno.findMany({
       where: {
         turma: {
@@ -44,22 +54,57 @@ export async function GET(req: NextRequest) {
           where: dateRangeFilter,
           select: {
             status: true,
+            subLicao: {
+              select: {
+                disciplina: true,
+              },
+            },
           },
         },
       },
       orderBy: { nome: "asc" }
     })
 
-    // Agrupar entregas por aluno
+    const disciplinasTurma = turma?.disciplinas ?? []
+    const disciplinasEntregas = Array.from(
+      new Set(
+        alunos.flatMap((aluno) =>
+          aluno.entregas.map((entrega) => entrega.subLicao.disciplina)
+        )
+      )
+    )
+    const disciplinas = Array.from(
+      new Set([...disciplinasTurma, ...disciplinasEntregas])
+    )
+
     const resumoPorAluno: ResumoAlunoItem[] = alunos.map(aluno => {
+      const porDisciplina = Object.fromEntries(
+        disciplinas.map((disciplina) => [disciplina, { fez: 0, total: 0 }])
+      ) as Record<string, { fez: number; total: number }>
+
+      aluno.entregas.forEach((entrega) => {
+        const disciplina = entrega.subLicao.disciplina
+        porDisciplina[disciplina].total += 1
+        if (entrega.status === "FEZ") {
+          porDisciplina[disciplina].fez += 1
+        }
+      })
+
+      const totalFez = aluno.entregas.filter((e) => e.status === "FEZ").length
+      const totalGeral = aluno.entregas.length
+
       return {
         nome: aluno.nome,
-        fez: aluno.entregas.filter(e => e.status === "FEZ").length,
-        naoFez: aluno.entregas.filter(e => e.status === "NAO_FEZ").length
+        totalFez,
+        totalGeral,
+        porDisciplina,
       }
     })
 
-    return NextResponse.json(resumoPorAluno)
+    return NextResponse.json({
+      disciplinas,
+      rows: resumoPorAluno,
+    })
   } catch (error) {
     console.error(error)
     return NextResponse.json({ error: "Erro ao buscar dados" }, { status: 500 })

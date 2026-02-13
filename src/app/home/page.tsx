@@ -25,13 +25,16 @@ export default async function HomePage() {
     <div className="min-h-screen bg-muted/40 p-8">
       <div className="max-w-7xl mx-auto space-y-10">
 
-        {!turma ? <NovaTurmaForm /> : null}
+        {!turma ? <NovaTurmaForm /> : 
+        <>
+          <Dashboard />
+          
+          <AlunoAnalyticsSection />
 
-        <Dashboard />
-        
-        <AlunoAnalyticsSection />
+          <LicoesList />
+        </>
+        }
 
-        <LicoesList />
       </div>
     </div>
   );
