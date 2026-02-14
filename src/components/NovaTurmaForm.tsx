@@ -114,7 +114,7 @@ export default function NovaTurmaForm({
           <CardDescription>
             {mode === "edit"
               ? "Atualize o nome da sala, alunos, disciplinas e materiais."
-              : "Bem-vindo! Para iniciar o uso da aplicacao, voce precisa criar uma turma primeiro."}
+              : "Bem-vindo! Para iniciar o uso da aplicação, vocâ precisa criar uma turma primeiro."}
           </CardDescription>
         </CardHeader>
 

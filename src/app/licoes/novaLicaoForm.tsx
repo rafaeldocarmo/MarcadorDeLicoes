@@ -103,15 +103,15 @@ export default function NovaLicaoForm({
     <div className="min-h-screen flex items-center justify-center bg-muted/40 p-6">
       <Card className="w-full max-w-3xl rounded-2xl shadow-xl">
         <CardHeader>
-          <CardTitle className="text-2xl font-semibold">Criar Nova Licao</CardTitle>
+          <CardTitle className="text-2xl font-semibold">Criar Nova Lição</CardTitle>
           {!hasLicoes ? (
             <CardDescription>
-              Esta sera sua primeira licao. Crie uma licao para comecar a visualizar os dados da sala.
+              Esta será sua primeira lição. Crie uma lição para comecar a visualizar os dados da sala.
             </CardDescription>
           ) : null}
           {!hasCatalogo ? (
             <CardDescription>
-              Antes de criar licoes, cadastre disciplinas e materiais na tela de editar sala.
+              Antes de criar lições, cadastre disciplinas e materiais na tela de editar sala.
             </CardDescription>
           ) : null}
         </CardHeader>
@@ -120,7 +120,7 @@ export default function NovaLicaoForm({
           <form action={handleSubmit} className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="space-y-1 md:col-span-2">
-                <Label htmlFor="titulo">Titulo</Label>
+                <Label htmlFor="titulo">Título</Label>
                 <Input type="text" id="titulo" name="titulo" required className="input w-full" />
               </div>
 
@@ -162,7 +162,7 @@ export default function NovaLicaoForm({
             </div>
 
             <div className="space-y-6">
-              <h2 className="text-xl font-semibold">Sublicoes</h2>
+              <h2 className="text-xl font-semibold">Sublições</h2>
               {subLicoes.map((sub, index) => (
                 <div
                   key={index}
@@ -211,7 +211,7 @@ export default function NovaLicaoForm({
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Descricao</Label>
+                    <Label>Descrição</Label>
                     <Textarea
                       value={sub.descricao}
                       onChange={(e) => atualizarSubLicao(index, "descricao", e.target.value)}
@@ -233,7 +233,7 @@ export default function NovaLicaoForm({
                 </div>
               ))}
               <Button type="button" variant="outline" onClick={adicionarSubLicao}>
-                + Adicionar Sublicao
+                + Adicionar Lição
               </Button>
             </div>
 
@@ -246,7 +246,7 @@ export default function NovaLicaoForm({
                 <span />
               )}
               <Button disabled={isPending || !hasCatalogo} className="rounded-2xl px-6">
-                {isPending ? "Criando..." : "Criar Licao"}
+                {isPending ? "Criando..." : "Criar Lição"}
               </Button>
             </div>
           </form>

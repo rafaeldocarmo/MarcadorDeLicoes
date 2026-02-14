@@ -90,15 +90,15 @@ export default function LicoesList({ pageSize = 6 }: Props) {
   return (
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <h2 className="text-2xl font-semibold">Licoes</h2>
+        <h2 className="text-2xl font-semibold">Lições</h2>
         <Button asChild>
-          <Link href="/licoes">Criar nova Licao</Link>
+          <Link href="/licoes">Criar nova Lição</Link>
         </Button>
       </div>
 
       <div className="flex flex-wrap gap-2 items-center justify-end">
         <Input
-          placeholder="Buscar por titulo..."
+          placeholder="Buscar por título..."
           value={search}
           onChange={(e) => {
             setPage(1)
@@ -151,18 +151,18 @@ export default function LicoesList({ pageSize = 6 }: Props) {
           <TableHeader>
             <TableRow>
               <TableHead className="w-12 px-2" />
-              <TableHead className="min-w-[260px]">Titulo</TableHead>
+              <TableHead className="min-w-[260px]">Título</TableHead>
               <TableHead className="w-[140px]">Data de envio</TableHead>
               <TableHead className="w-[140px]">Data de entrega</TableHead>
-              <TableHead className="w-[140px] text-center">Qtd. sublicoes</TableHead>
-              <TableHead className="w-[160px] text-right">Acoes</TableHead>
+              <TableHead className="w-[140px] text-center">Qtd. sublições</TableHead>
+              <TableHead className="w-[160px] text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {licoes.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="h-24 text-center">
-                  Nenhuma licao encontrada.
+                  Nenhuma lição encontrada.
                 </TableCell>
               </TableRow>
             ) : (
@@ -203,7 +203,7 @@ export default function LicoesList({ pageSize = 6 }: Props) {
                                 <TableHead className="w-16">#</TableHead>
                                 <TableHead>Disciplina</TableHead>
                                 <TableHead>Material</TableHead>
-                                <TableHead>Descricao</TableHead>
+                                <TableHead>Descrição</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -240,7 +240,7 @@ export default function LicoesList({ pageSize = 6 }: Props) {
           {page} / {totalPages}
         </span>
         <Button disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
-          Proxima
+          Próxima
         </Button>
       </div>
     </div>
