@@ -1,8 +1,9 @@
-﻿"use client"
+"use client"
 
-import { Fragment, useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { ChevronDown, ChevronRight } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Select,
@@ -11,14 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 
 type Licao = {
   id: string
@@ -32,10 +25,6 @@ type Licao = {
   }[]
 }
 
-type Props = {
-  pageSize?: number
-}
-
 type LicoesApiResponse = {
   items: Licao[]
   totalPages: number
@@ -43,192 +32,257 @@ type LicoesApiResponse = {
   materiaisDisponiveis: string[]
 }
 
-export default function LicoesList({ pageSize = 6 }: Props) {
+function startOfMonth(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1)
+}
+
+function addMonths(date: Date, amount: number) {
+  return new Date(date.getFullYear(), date.getMonth() + amount, 1)
+}
+
+function normalizeDate(dateString: string) {
+  const d = new Date(dateString)
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate())
+}
+
+function toLocalDateKey(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
+
+function abbreviateDisciplina(disciplina: string) {
+  const words = disciplina.trim().split(/\s+/).filter(Boolean)
+
+  if (words.length > 1) {
+    return words
+      .slice(0, 3)
+      .map((word) => word[0]?.toUpperCase() ?? "")
+      .join("")
+  }
+
+  return words[0]?.slice(0, 3).toUpperCase() ?? "---"
+}
+
+function getDisciplinaBadges(licao: Licao) {
+  const unique = new Set(licao.subLicoes.map((sub) => sub.disciplina))
+  return [...unique].map(abbreviateDisciplina)
+}
+
+const WEEK_DAYS = ["Seg", "Ter", "Qua", "Qui", "Sex"]
+
+export default function LicoesList() {
+  const router = useRouter()
   const [licoes, setLicoes] = useState<Licao[]>([])
   const [disciplinaFilter, setDisciplinaFilter] = useState<string | undefined>()
   const [materialFilter, setMaterialFilter] = useState<string | undefined>()
-  const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
   const [disciplinasDisponiveis, setDisciplinasDisponiveis] = useState<string[]>([])
   const [materiaisDisponiveis, setMateriaisDisponiveis] = useState<string[]>([])
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({})
-
-  function toggleExpanded(id: string) {
-    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }))
-  }
+  const [monthCursor, setMonthCursor] = useState(() => startOfMonth(new Date()))
 
   useEffect(() => {
     async function fetchLicoes() {
       const params = new URLSearchParams()
-      params.append("page", page.toString())
-      params.append("pageSize", pageSize.toString())
+      params.append("page", "1")
+      params.append("pageSize", "500")
       if (disciplinaFilter) params.append("disciplina", disciplinaFilter)
       if (materialFilter) params.append("material", materialFilter)
 
       const res = await fetch(`/api/licoes?${params.toString()}`)
       if (!res.ok) {
         setLicoes([])
-        setTotalPages(1)
         return
       }
 
       const data: LicoesApiResponse = await res.json()
       setLicoes(data.items)
-      setTotalPages(data.totalPages)
       setDisciplinasDisponiveis(data.disciplinasDisponiveis ?? [])
       setMateriaisDisponiveis(data.materiaisDisponiveis ?? [])
-      setExpanded({})
     }
 
     fetchLicoes()
-  }, [page, pageSize, disciplinaFilter, materialFilter])
+  }, [disciplinaFilter, materialFilter])
+
+  const monthLabel = useMemo(
+    () =>
+      new Intl.DateTimeFormat("pt-BR", {
+        month: "long",
+        year: "numeric",
+      }).format(monthCursor),
+    [monthCursor],
+  )
+
+  const licoesByDay = useMemo(() => {
+    const grouped = new Map<string, Licao[]>()
+
+    for (const licao of licoes) {
+      const key = toLocalDateKey(normalizeDate(licao.dataEntrega))
+      const list = grouped.get(key) ?? []
+      list.push(licao)
+      grouped.set(key, list)
+    }
+
+    return grouped
+  }, [licoes])
+
+  const calendarDays = useMemo(() => {
+    const year = monthCursor.getFullYear()
+    const month = monthCursor.getMonth()
+    const lastDay = new Date(year, month + 1, 0).getDate()
+    const days: Date[] = []
+
+    for (let day = 1; day <= lastDay; day += 1) {
+      const current = new Date(year, month, day)
+      const weekDay = current.getDay()
+      if (weekDay >= 1 && weekDay <= 5) {
+        days.push(current)
+      }
+    }
+
+    return days
+  }, [monthCursor])
+
+  function openCreateLicaoWithDate(day: Date) {
+    const dateKey = toLocalDateKey(day)
+    router.push(`/licoes?dataEntrega=${dateKey}`)
+  }
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <h2 className="text-2xl font-semibold">Lições</h2>
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <h2 className="text-2xl font-semibold">Agenda de Lições</h2>
         <Button asChild>
           <Link href="/licoes">Criar nova lição</Link>
         </Button>
       </div>
 
-      <div className="flex flex-wrap gap-2 items-center justify-end">
-        <Select
-          onValueChange={(v) => {
-            setPage(1)
-            setDisciplinaFilter(v === "ALL" ? undefined : v)
-          }}
-        >
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Filtrar por disciplina" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">Todas</SelectItem>
-            {disciplinasDisponiveis.map((disciplina) => (
-              <SelectItem key={disciplina} value={disciplina}>
-                {disciplina}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => setMonthCursor((prev) => addMonths(prev, -1))}
+            aria-label="Mes anterior"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <div className="min-w-44 text-center text-sm font-medium capitalize">{monthLabel}</div>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => setMonthCursor((prev) => addMonths(prev, 1))}
+            aria-label="Proximo mes"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
 
-        <Select
-          onValueChange={(v) => {
-            setPage(1)
-            setMaterialFilter(v === "ALL" ? undefined : v)
-          }}
-        >
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Filtrar por material" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">Todos</SelectItem>
-            {materiaisDisponiveis.map((material) => (
-              <SelectItem key={material} value={material}>
-                {material}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Select
+            onValueChange={(v) => {
+              setDisciplinaFilter(v === "ALL" ? undefined : v)
+            }}
+          >
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Filtrar disciplina" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Todas</SelectItem>
+              {disciplinasDisponiveis.map((disciplina) => (
+                <SelectItem key={disciplina} value={disciplina}>
+                  {disciplina}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            onValueChange={(v) => {
+              setMaterialFilter(v === "ALL" ? undefined : v)
+            }}
+          >
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Filtrar material" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Todos</SelectItem>
+              {materiaisDisponiveis.map((material) => (
+                <SelectItem key={material} value={material}>
+                  {material}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      <div className="rounded-md border bg-background">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12 px-2" />
-              <TableHead className="w-[140px]">Data de envio</TableHead>
-              <TableHead className="w-[140px]">Data de entrega</TableHead>
-              <TableHead className="w-[140px] text-center">Qtd. lições</TableHead>
-              <TableHead className="w-[160px] text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {licoes.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center">
-                  Nenhuma lição encontrada.
-                </TableCell>
-              </TableRow>
-            ) : (
-              licoes.map((licao) => (
-                <Fragment key={licao.id}>
-                  <TableRow>
-                    <TableCell className="px-2">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => toggleExpanded(licao.id)}
-                        aria-label="Expandir lições"
-                      >
-                        {expanded[licao.id] ? <ChevronDown /> : <ChevronRight />}
-                      </Button>
-                    </TableCell>
-                    <TableCell>{new Date(licao.dataEnvio).toLocaleDateString()}</TableCell>
-                    <TableCell>{new Date(licao.dataEntrega).toLocaleDateString()}</TableCell>
-                    <TableCell className="text-center">{licao.subLicoes.length}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end">
-                        <Button asChild variant="outline" size="sm">
-                          <Link href={`/licoes/${licao.id}`}>Ver detalhes</Link>
-                        </Button>
+      <div className="space-y-2 rounded-xl p-3 shadow-sm">
+        <div className="grid grid-cols-5 gap-2">
+          {WEEK_DAYS.map((weekday) => (
+            <div
+              key={weekday}
+              className="rounded-md border border-border/60 bg-white py-1.5 text-center text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
+            >
+              {weekday}
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-5 gap-2">
+          {calendarDays.map((day) => {
+            const key = toLocalDateKey(day)
+            const dayLicoes = licoesByDay.get(key) ?? []
+
+            return (
+              <div
+                key={key}
+                role="button"
+                tabIndex={0}
+                onClick={() => openCreateLicaoWithDate(day)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault()
+                    openCreateLicaoWithDate(day)
+                  }
+                }}
+                className="min-h-[85px] cursor-pointer rounded-md border border-border/70 bg-background p-1.5 shadow-[0_1px_0_rgba(0,0,0,0.03)] transition-colors hover:border-primary/40"
+              >
+                <div className="mb-1 text-right text-[11px] font-semibold text-muted-foreground">{day.getDate()}</div>
+
+                <div className="space-y-1">
+                  {dayLicoes.map((licao) => (
+                    <Link
+                      key={licao.id}
+                      href={`/licoes/${licao.id}`}
+                      onClick={(event) => event.stopPropagation()}
+                      className="block rounded-md border border-[#d8d7d29b] bg-[#FFFDF2] px-1.5 py-1 text-[9px] leading-tight shadow-sm transition-colors hover:bg-primary/10"
+                    >
+                      <div className="flex flex-wrap gap-1 font-medium">
+                        {getDisciplinaBadges(licao).map((badge) => (
+                          <span
+                            key={`${licao.id}-${badge}`}
+                            className="rounded-sm border px-1 py-0.5 text-[14px] font-semibold text-primary/90"
+                          >
+                            {badge}
+                          </span>
+                        ))}
                       </div>
-                    </TableCell>
-                  </TableRow>
-
-                  {expanded[licao.id] ? (
-                    <TableRow>
-                      <TableCell colSpan={5}>
-                        <div className="rounded-md border bg-muted/30 p-3">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead className="w-16">#</TableHead>
-                                <TableHead>Disciplina</TableHead>
-                                <TableHead>Material</TableHead>
-                                <TableHead>Descrição</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {licao.subLicoes.map((sub, index) => (
-                                <TableRow key={sub.id ?? `${licao.id}-${index}`}>
-                                  <TableCell>{index + 1}</TableCell>
-                                  <TableCell>{sub.disciplina}</TableCell>
-                                  <TableCell>{sub.material}</TableCell>
-                                  <TableCell className="max-w-md truncate">
-                                    {sub.descricao
-                                      ? `${sub.descricao.slice(0, 80)}${sub.descricao.length > 80 ? "..." : ""}`
-                                      : "-"}
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ) : null}
-                </Fragment>
-              ))
-            )}
-          </TableBody>
-        </Table>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
 
-      <div className="flex justify-center gap-2 mt-4">
-        <Button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-          Anterior
-        </Button>
-        <span className="px-2 py-1">
-          {page} / {totalPages}
-        </span>
-        <Button disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
-          Próxima
-        </Button>
-      </div>
+      {licoes.length === 0 ? (
+        <p className="text-xs text-muted-foreground">Nenhuma licao encontrada com os filtros atuais.</p>
+      ) : null}
+
     </div>
   )
 }
-
-

@@ -91,7 +91,7 @@
   }
   body {
     @apply bg-background text-foreground;
-    background-color: #ffdde7ee;
+    background-color: #FFFDF2;
     background-image:
       linear-gradient(
         to right,

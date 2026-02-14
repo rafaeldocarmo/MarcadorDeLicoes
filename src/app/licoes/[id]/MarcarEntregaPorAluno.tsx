@@ -6,6 +6,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { format } from "date-fns";
+import { BookOpen, FileText, Layers } from "lucide-react";
 
 type Status = "FEZ" | "NAO_FEZ";
 
@@ -18,6 +19,7 @@ type SubLicao = {
   id: string;
   disciplina: string;
   material: string;
+  descricao?: string;
 };
 
 type Licao = {
@@ -115,6 +117,60 @@ export default function MarcarEntregaPorAluno({
         <h1 className="text-3xl font-bold">
           {formatDateBr(licao.dataEnvio)} - {formatDateBr(licao.dataEntrega)}
         </h1>
+
+        <section className="rounded-3xl border border-border/70 bg-gradient-to-b from-background to-muted/20 p-4 shadow-sm md:p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Lições
+            </h2>
+            <span className="rounded-full border border-border/70 bg-background px-3 py-1 text-xs font-medium text-muted-foreground">
+              {licao.subLicoes.length} itens
+            </span>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {licao.subLicoes.map((sub: SubLicao, index: number) => (
+              <article
+                key={sub.id}
+                className="group rounded-2xl border border-border/70 bg-background p-4 shadow-[0_1px_0_rgba(0,0,0,0.03)] transition-all hover:-translate-y-0.5 hover:border-primary/35 hover:shadow-md"
+              >
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary">
+                    Lição {index + 1}
+                  </span>
+                </div>
+
+                <div className="space-y-2.5">
+                  <div className="flex items-start gap-2">
+                    <BookOpen className="mt-0.5 h-4 w-4 text-primary/80" />
+                    <div>
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Disciplina</p>
+                      <p className="text-sm font-semibold text-foreground">{sub.disciplina}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2">
+                    <Layers className="mt-0.5 h-4 w-4 text-primary/80" />
+                    <div>
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Material</p>
+                      <p className="text-sm font-medium text-foreground">{sub.material}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2">
+                    <FileText className="mt-0.5 h-4 w-4 text-primary/80" />
+                    <div>
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Descricao</p>
+                      <p className="line-clamp-3 text-sm text-muted-foreground">
+                        {sub.descricao?.trim() ? sub.descricao : "Sem descricao informada."}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
 
         <div className="border rounded-2xl overflow-hidden bg-background">
           <table className="w-full text-sm">

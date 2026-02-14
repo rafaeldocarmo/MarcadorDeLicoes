@@ -59,6 +59,14 @@ export default function NovaLicaoForm({
 }: Props) {
   function toValidDate(value: string | undefined, fallback: Date) {
     if (!value) return fallback
+    const localDateMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+    if (localDateMatch) {
+      const year = Number(localDateMatch[1])
+      const month = Number(localDateMatch[2]) - 1
+      const day = Number(localDateMatch[3])
+      const parsedLocal = new Date(year, month, day)
+      if (!Number.isNaN(parsedLocal.getTime())) return parsedLocal
+    }
     const parsed = new Date(value)
     return Number.isNaN(parsed.getTime()) ? fallback : parsed
   }

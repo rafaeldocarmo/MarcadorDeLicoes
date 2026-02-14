@@ -4,7 +4,17 @@ import { authOptions } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 
-export default async function Page() {
+type SearchParamsInput =
+  | Promise<{ dataEntrega?: string }>
+  | { dataEntrega?: string }
+  | undefined
+
+function getDataEntregaFromQuery(value: string | undefined) {
+  if (!value) return undefined
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : undefined
+}
+
+export default async function Page({ searchParams }: { searchParams?: SearchParamsInput }) {
   const session = await getServerSession(authOptions)
 
   if (!session?.user?.id) {
@@ -30,11 +40,15 @@ export default async function Page() {
       })
     : 0
 
+  const resolvedSearchParams = searchParams ? await Promise.resolve(searchParams) : undefined
+  const initialDataEntrega = getDataEntregaFromQuery(resolvedSearchParams?.dataEntrega)
+
   return (
     <NovaLicaoForm
       hasLicoes={totalLicoes > 0}
       disciplinas={turma?.disciplinas ?? []}
       materiais={turma?.materiais ?? []}
+      initialDataEntrega={initialDataEntrega}
     />
   )
 }
