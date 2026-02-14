@@ -1,4 +1,4 @@
-import { authOptions } from "@/lib/auth";
+Ôªøimport { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "N„o autorizado" }, { status: 401 });
+      return NextResponse.json({ error: "N√£o autorizado" }, { status: 401 });
     }
 
     const body = (await req.json()) as Partial<NovaLicaoPayload>;
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     );
 
     if (!dataEnvio || !dataEntrega || subLicoes.length === 0) {
-      return NextResponse.json({ error: "Dados inv·lidos" }, { status: 400 });
+      return NextResponse.json({ error: "Dados inv√°lidos" }, { status: 400 });
     }
 
     const turma = await prisma.turma.findFirst({
@@ -86,7 +86,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ id: licao.id }, { status: 201 });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Erro ao criar liÁ„o" }, { status: 500 });
+    return NextResponse.json({ error: "Erro ao criar li√ß√£o" }, { status: 500 });
   }
 }
+
 

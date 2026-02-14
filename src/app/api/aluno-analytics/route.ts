@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server"
+﻿import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { authOptions } from "@/lib/auth"
 import { getServerSession } from "next-auth"
@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions)
 
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "N�o autorizado" }, { status: 401 })
+    return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
   }
 
   const { searchParams } = new URL(req.url)
@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
 
   if (!alunoId) {
     return NextResponse.json(
-      { error: "Aluno não informado" },
+      { error: "Aluno nÃ£o informado" },
       { status: 400 }
     )
   }
@@ -148,4 +148,5 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({ timeline, disciplinas, geral })
 }
+
 

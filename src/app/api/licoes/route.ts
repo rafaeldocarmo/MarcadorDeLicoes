@@ -1,4 +1,4 @@
-// /pages/api/licoes.ts
+ï»¿// /pages/api/licoes.ts
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+      return NextResponse.json({ error: "NÃ£o autorizado" }, { status: 401 });
     }
 
     const url = new URL(req.url);
@@ -59,7 +59,8 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Erro ao buscar lições" }, { status: 500 });
+    return NextResponse.json({ error: "Erro ao buscar liÃ§Ãµes" }, { status: 500 });
   }
 }
+
 
