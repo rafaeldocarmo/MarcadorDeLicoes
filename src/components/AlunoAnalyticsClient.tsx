@@ -84,7 +84,7 @@ export default function AlunoAnalyticsClient({ alunos }: Props) {
 
       {data && (
         <>
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid gap-6 lg:grid-cols-2">
             <GeralAlunoChart data={data.geral} />
             <DisciplinaChart data={data.disciplinas} />
           </div>

@@ -46,28 +46,29 @@ export default function TimelineChart({ data }: Props) {
       </CardHeader>
 
       <CardContent>
-        <ChartContainer config={chartConfig}  className="max-h-[200px] w-full">
-          <BarChart data={data}>
-            <CartesianGrid vertical={false} />
-            <XAxis dataKey="data" />
-            <YAxis allowDecimals={false} />
-            <ChartTooltip content={<CustomTooltip />} />
+        <div className="w-full overflow-x-auto">
+          <ChartContainer config={chartConfig} className="aspect-auto h-[220px] min-w-[560px] w-full">
+            <BarChart data={data}>
+              <CartesianGrid vertical={false} />
+              <XAxis dataKey="data" />
+              <YAxis allowDecimals={false} />
+              <ChartTooltip content={<CustomTooltip />} />
 
-
-            <Bar
-              dataKey="fez"
-              stackId="a"
-              fill="#2cba2ca6"
-              radius={[ 0, 0, 4, 4]}
-            />
-            <Bar
-              dataKey="naoFez"
-              stackId="a"
-              fill="#ff3939bd"
-              radius={[4, 4, 0, 0]}
-            />
-          </BarChart>
-        </ChartContainer>
+              <Bar
+                dataKey="fez"
+                stackId="a"
+                fill="#2cba2ca6"
+                radius={[0, 0, 4, 4]}
+              />
+              <Bar
+                dataKey="naoFez"
+                stackId="a"
+                fill="#ff3939bd"
+                radius={[4, 4, 0, 0]}
+              />
+            </BarChart>
+          </ChartContainer>
+        </div>
       </CardContent>
     </Card>
   )

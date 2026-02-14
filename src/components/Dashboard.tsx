@@ -1,9 +1,7 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { DateRange } from "react-day-picker"
-import { addDays } from "date-fns"
 import {
   ColumnDef,
   HeaderContext,
@@ -15,13 +13,12 @@ import {
 } from "@tanstack/react-table"
 import { ArrowUpDown } from "lucide-react"
 
-import { Calendar } from "@/components/ui/calendar"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
+  ToggleGroup,
+  ToggleGroupItem,
+} from "@/components/ui/toggle-group"
 import {
   Table,
   TableBody,
@@ -35,35 +32,73 @@ type DashboardRow = {
   nome: string
   totalFez: number
   totalGeral: number
-  porDisciplina: Record<string, { fez: number; total: number }>
+  porDia: Record<string, { total: number; fez: number; pendentes: string[] }>
 }
 
 type DashboardResponse = {
-  disciplinas: string[]
+  mes: string
+  dias: number[]
   rows: DashboardRow[]
 }
 
-export default function Dashboard() {
-  const [date, setDate] = useState<DateRange | undefined>({
-    from: addDays(new Date(), -30),
-    to: new Date(),
-  })
+type FilterMode = "month" | "currentWeek"
 
+function getCurrentMonthValue() {
+  const now = new Date()
+  const year = now.getUTCFullYear()
+  const month = String(now.getUTCMonth() + 1).padStart(2, "0")
+  return `${year}-${month}`
+}
+
+function getMonthDateRange(monthValue: string) {
+  const [yearText, monthText] = monthValue.split("-")
+  const year = Number(yearText)
+  const month = Number(monthText)
+
+  if (!year || !month) {
+    return getMonthDateRange(getCurrentMonthValue())
+  }
+
+  const from = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0))
+  const to = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999))
+
+  return { from, to }
+}
+
+function getCurrentWeekDateRange() {
+  const now = new Date()
+  const utcToday = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0)
+  )
+  const dayOfWeek = utcToday.getUTCDay()
+  const mondayOffset = (dayOfWeek + 6) % 7
+
+  const from = new Date(utcToday)
+  from.setUTCDate(utcToday.getUTCDate() - mondayOffset)
+
+  const to = new Date(from)
+  to.setUTCDate(from.getUTCDate() + 6)
+  to.setUTCHours(23, 59, 59, 999)
+
+  return { from, to }
+}
+
+export default function Dashboard() {
+  const [filterMode, setFilterMode] = useState<FilterMode>("month")
+  const [selectedMonth, setSelectedMonth] = useState<string>(getCurrentMonthValue())
   const [rows, setRows] = useState<DashboardRow[]>([])
-  const [disciplinas, setDisciplinas] = useState<string[]>([])
+  const [days, setDays] = useState<number[]>([])
   const [loading, setLoading] = useState(true)
   const [sorting, setSorting] = useState<SortingState>([])
 
-  async function loadDashboard(from?: Date, to?: Date, showLoading = true) {
+  const loadDashboard = useCallback(async (from: Date, to: Date, showLoading = true) => {
     if (showLoading) {
       setLoading(true)
     }
 
     const params = new URLSearchParams()
-    if (from && to) {
-      params.set("from", from.toISOString())
-      params.set("to", to.toISOString())
-    }
+    params.set("from", from.toISOString())
+    params.set("to", to.toISOString())
 
     const queryString = params.toString()
     const endpoint = queryString ? `/api/dashboard?${queryString}` : "/api/dashboard"
@@ -72,29 +107,31 @@ export default function Dashboard() {
 
     if (!res.ok) {
       setRows([])
-      setDisciplinas([])
+      setDays([])
       setLoading(false)
       return
     }
 
     const payload: DashboardResponse = await res.json()
     setRows(payload.rows ?? [])
-    setDisciplinas(payload.disciplinas ?? [])
+    setDays(payload.dias ?? [])
     setLoading(false)
-  }
-
-  useEffect(() => {
-    const fetchInitialData = async () => {
-      await loadDashboard(undefined, undefined, false)
-    }
-
-    void fetchInitialData()
   }, [])
 
-  async function handleFilter() {
-    if (!date?.from || !date?.to) return
-    await loadDashboard(date.from, date.to)
-  }
+  useEffect(() => {
+    const applyFilter = async () => {
+      if (filterMode === "currentWeek") {
+        const range = getCurrentWeekDateRange()
+        await loadDashboard(range.from, range.to, false)
+        return
+      }
+
+      const range = getMonthDateRange(selectedMonth)
+      await loadDashboard(range.from, range.to, false)
+    }
+
+    void applyFilter()
+  }, [filterMode, selectedMonth, loadDashboard])
 
   const columns = useMemo<ColumnDef<DashboardRow>[]>(() => {
     const baseColumns: ColumnDef<DashboardRow>[] = [
@@ -112,22 +149,35 @@ export default function Dashboard() {
         ),
         cell: ({ row }) => row.original.nome,
       },
-      ...disciplinas.map((disciplina) => ({
-        id: disciplina,
-        accessorFn: (row: DashboardRow) => row.porDisciplina[disciplina]?.fez ?? 0,
+      ...days.map((day) => ({
+        id: `dia-${day}`,
+        accessorFn: (row: DashboardRow) => row.porDia[String(day)]?.fez ?? 0,
         header: ({ column }: HeaderContext<DashboardRow, unknown>) => (
           <Button
             variant="ghost"
             className="h-8 px-2 justify-center w-full"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            {disciplina}
+            {day}
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         ),
         cell: ({ row }: { row: { original: DashboardRow } }) => {
-          const values = row.original.porDisciplina[disciplina] ?? { fez: 0, total: 0 }
-          return `${values.fez}/${values.total}`
+          const values = row.original.porDia[String(day)]
+
+          if (!values || values.total === 0) {
+            return <span className="text-muted-foreground">-</span>
+          }
+
+          if (values.fez === values.total) {
+            return <span className="font-semibold text-green-600">OK</span>
+          }
+
+          return (
+            <span className="text-red-600">
+              {values.pendentes.length ? values.pendentes.join(", ") : "Pendente"}
+            </span>
+          )
         },
       })),
       {
@@ -148,7 +198,7 @@ export default function Dashboard() {
     ]
 
     return baseColumns
-  }, [disciplinas])
+  }, [days])
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
@@ -164,25 +214,35 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-[1.5rem] font-semibold">Visão da classe</h1>
+      <h1 className="text-[1.5rem] font-semibold">Visao da classe</h1>
 
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline">Selecionar periodo</Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="range"
-                selected={date}
-                onSelect={setDate}
-                numberOfMonths={2}
-              />
-            </PopoverContent>
-          </Popover>
+          <ToggleGroup
+            type="single"
+            value={filterMode}
+            onValueChange={(value) => {
+              if (value === "month" || value === "currentWeek") {
+                setFilterMode(value)
+              }
+            }}
+            className="bg-[#fff]"
+          >
+            <ToggleGroupItem value="month" aria-label="Filtrar por mes">
+              Mês
+            </ToggleGroupItem>
+            <ToggleGroupItem value="currentWeek" aria-label="Filtrar por semana atual">
+              Semana atual
+            </ToggleGroupItem>
+          </ToggleGroup>
 
-          <Button onClick={handleFilter}>Filtrar</Button>
+          <Input
+            type="month"
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            disabled={filterMode === "currentWeek"}
+            className="w-[180px]"
+          />
         </div>
 
         <Button asChild variant="outline">
@@ -190,7 +250,7 @@ export default function Dashboard() {
         </Button>
       </div>
 
-      <div className="rounded-md border bg-background">
+      <div className="rounded-md border bg-background overflow-x-auto">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -200,7 +260,7 @@ export default function Dashboard() {
                     key={header.id}
                     className={
                       header.id === "nome"
-                        ? "w-[280px]"
+                        ? "w-[280px] sticky left-0 z-20 bg-background border-r border-border shadow-[inset_-10px_0_10px_-10px_rgba(0,0,0,0.45)]"
                         : "text-center"
                     }
                   >
@@ -219,7 +279,11 @@ export default function Dashboard() {
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
                       key={cell.id}
-                      className={cell.column.id === "nome" ? "" : "text-center"}
+                      className={
+                        cell.column.id === "nome"
+                          ? "sticky left-0 z-10 bg-background whitespace-nowrap border-r border-border shadow-[inset_-10px_0_10px_-10px_rgba(0,0,0,0.25)]"
+                          : "text-center"
+                      }
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
