@@ -57,6 +57,12 @@ export default function NovaLicaoForm({
   initialDataEntrega,
   initialSubLicoes,
 }: Props) {
+  function toValidDate(value: string | undefined, fallback: Date) {
+    if (!value) return fallback
+    const parsed = new Date(value)
+    return Number.isNaN(parsed.getTime()) ? fallback : parsed
+  }
+
   const router = useRouter()
   const [subLicoes, setSubLicoes] = useState<SubLicaoForm[]>([
     ...(initialSubLicoes?.length
@@ -65,11 +71,11 @@ export default function NovaLicaoForm({
   ])
   const [isPending, startTransition] = useTransition()
 
-  const [dataEnvio, setDataEnvio] = useState(
-    initialDataEnvio ? new Date(initialDataEnvio) : new Date()
+  const [dataEnvio, setDataEnvio] = useState(() =>
+    toValidDate(initialDataEnvio, new Date())
   )
   const [dataEntrega, setDataEntrega] = useState(() =>
-    initialDataEntrega ? new Date(initialDataEntrega) : addDays(new Date(), 1)
+    toValidDate(initialDataEntrega, addDays(new Date(), 1))
   )
 
   const hasCatalogo = disciplinas.length > 0 && materiais.length > 0
@@ -278,4 +284,3 @@ export default function NovaLicaoForm({
     </div>
   )
 }
-
