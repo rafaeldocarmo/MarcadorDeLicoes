@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { redirect } from "next/navigation";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -50,8 +50,12 @@ export default function MarcarEntregaPorAluno({
   licao,
   entregas,
 }: Props) {
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [shouldRedirectHome, setShouldRedirectHome] = useState(false);
+
+  if (shouldRedirectHome) {
+    redirect("/home");
+  }
 
   const [estadoEntregas, setEstadoEntregas] = useState(() => {
     const map = new Map<string, Status>();
@@ -101,7 +105,7 @@ export default function MarcarEntregaPorAluno({
       });
 
       if (!res.ok) return;
-      router.refresh();
+      setShouldRedirectHome(true);
     });
   }
 

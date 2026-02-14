@@ -271,7 +271,7 @@ export default function Dashboard() {
       </div>
 
       <div className="rounded-md border bg-background overflow-x-auto">
-        <Table>
+        <Table className="text-xs">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -280,8 +280,8 @@ export default function Dashboard() {
                     key={header.id}
                     className={
                       header.id === "nome"
-                        ? "w-[280px] sticky left-0 z-20 bg-background border-r border-border shadow-[inset_-10px_0_10px_-10px_rgba(0,0,0,0.45)]"
-                        : "text-center"
+                        ? "w-[220px] sticky left-0 z-20 bg-background border-r border-border shadow-[inset_-10px_0_10px_-10px_rgba(0,0,0,0.45)] h-9 px-2 text-xs"
+                        : "text-center h-9 px-2 text-xs"
                     }
                   >
                     {header.isPlaceholder
@@ -301,8 +301,8 @@ export default function Dashboard() {
                       key={cell.id}
                       className={
                         cell.column.id === "nome"
-                          ? "sticky left-0 z-10 bg-background whitespace-nowrap border-r border-border shadow-[inset_-10px_0_10px_-10px_rgba(0,0,0,0.25)]"
-                          : "text-center"
+                          ? "sticky left-0 z-10 bg-background whitespace-nowrap border-r border-border shadow-[inset_-10px_0_10px_-10px_rgba(0,0,0,0.25)] py-1.5 px-2 text-xs"
+                          : "text-center py-1.5 px-2 text-xs"
                       }
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
