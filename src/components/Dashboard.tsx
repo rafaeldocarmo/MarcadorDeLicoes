@@ -177,7 +177,6 @@ export default function Dashboard() {
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
             {day}
-            <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         ),
         cell: ({ row }: { row: { original: DashboardRow } }) => {

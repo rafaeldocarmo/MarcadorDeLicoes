@@ -2,6 +2,7 @@ import { PrismaAdapter } from "@next-auth/prisma-adapter"
 import GoogleProvider from "next-auth/providers/google"
 import { prisma } from "@/lib/prisma"
 import { NextAuthOptions } from "next-auth"
+import AzureADProvider from "next-auth/providers/azure-ad";
 
 declare module "next-auth" {
   interface Session {
@@ -22,6 +23,11 @@ export const authOptions: NextAuthOptions = {
         GoogleProvider({
         clientId: process.env.GOOGLE_CLIENT_ID!,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET!
+        }),
+        AzureADProvider({
+        clientId: process.env.AZURE_AD_CLIENT_ID!,
+        clientSecret: process.env.AZURE_AD_CLIENT_SECRET!,
+        tenantId: "common"
         })
     ],
     callbacks: {
