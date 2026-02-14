@@ -13,13 +13,12 @@ export async function GET(req: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Nao autorizado" }, { status: 401 });
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
     const url = new URL(req.url);
     const page = Math.max(1, parseInt(url.searchParams.get("page") || "1", 10));
     const pageSize = Math.max(1, parseInt(url.searchParams.get("pageSize") || "5", 10));
-    const search = url.searchParams.get("search") || "";
     const disciplina = url.searchParams.get("disciplina");
     const material = url.searchParams.get("material");
 
@@ -34,7 +33,6 @@ export async function GET(req: NextRequest) {
       },
     };
 
-    if (search) where.titulo = { contains: search, mode: "insensitive" };
     if (disciplina || material) {
       where.subLicoes = {
         some: {
@@ -61,6 +59,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Erro ao buscar licoes" }, { status: 500 });
+    return NextResponse.json({ error: "Erro ao buscar lições" }, { status: 500 });
   }
 }
+

@@ -1,10 +1,11 @@
-"use client";
+﻿"use client";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { format } from "date-fns";
 
 type Status = "FEZ" | "NAO_FEZ";
 
@@ -21,7 +22,8 @@ type SubLicao = {
 
 type Licao = {
   id: string;
-  titulo: string;
+  dataEnvio: Date | string;
+  dataEntrega: Date | string;
   turma: {
     alunos: Aluno[];
   };
@@ -39,6 +41,11 @@ type Props = {
   entregas: Entrega[];
 };
 
+function formatDateBr(value: Date | string) {
+  const parsed = value instanceof Date ? value : new Date(value);
+  return format(parsed, "dd/MM/yyyy");
+}
+
 export default function MarcarEntregaPorAluno({
   licao,
   entregas,
@@ -46,7 +53,6 @@ export default function MarcarEntregaPorAluno({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  // 🔥 Estado local editável
   const [estadoEntregas, setEstadoEntregas] = useState(() => {
     const map = new Map<string, Status>();
 
@@ -102,7 +108,9 @@ export default function MarcarEntregaPorAluno({
   return (
     <div className="min-h-screen bg-muted/40 p-8">
       <div className="max-w-7xl mx-auto space-y-6">
-        <h1 className="text-3xl font-bold">{licao.titulo}</h1>
+        <h1 className="text-3xl font-bold">
+          {formatDateBr(licao.dataEnvio)} - {formatDateBr(licao.dataEntrega)}
+        </h1>
 
         <div className="border rounded-2xl overflow-hidden bg-background">
           <table className="w-full text-sm">
@@ -175,3 +183,5 @@ export default function MarcarEntregaPorAluno({
     </div>
   );
 }
+
+

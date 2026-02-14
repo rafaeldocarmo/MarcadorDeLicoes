@@ -10,7 +10,6 @@ type SubLicaoInput = {
 };
 
 type NovaLicaoPayload = {
-  titulo: string;
   dataEnvio: string;
   dataEntrega: string;
   subLicoes: SubLicaoInput[];
@@ -21,11 +20,10 @@ export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Nao autorizado" }, { status: 401 });
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
     const body = (await req.json()) as Partial<NovaLicaoPayload>;
-    const titulo = body.titulo?.trim() ?? "";
     const dataEnvio = body.dataEnvio;
     const dataEntrega = body.dataEntrega;
     const subLicoes = (body.subLicoes ?? []).filter(
@@ -35,8 +33,8 @@ export async function POST(req: Request) {
         sub.descricao?.trim()
     );
 
-    if (!titulo || !dataEnvio || !dataEntrega || subLicoes.length === 0) {
-      return NextResponse.json({ error: "Dados invalidos" }, { status: 400 });
+    if (!dataEnvio || !dataEntrega || subLicoes.length === 0) {
+      return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
     }
 
     const turma = await prisma.turma.findFirst({
@@ -54,7 +52,6 @@ export async function POST(req: Request) {
 
     const licao = await prisma.licao.create({
       data: {
-        titulo,
         dataEnvio: new Date(dataEnvio),
         dataEntrega: new Date(dataEntrega),
         turmaId: turma.id,
@@ -89,6 +86,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ id: licao.id }, { status: 201 });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Erro ao criar licao" }, { status: 500 });
+    return NextResponse.json({ error: "Erro ao criar lição" }, { status: 500 });
   }
 }
+

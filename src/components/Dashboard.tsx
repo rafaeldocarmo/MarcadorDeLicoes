@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
@@ -214,7 +214,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-[1.5rem] font-semibold">Visao da classe</h1>
+      <h1 className="text-[1.5rem] font-semibold">Visão da classe</h1>
 
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -228,7 +228,7 @@ export default function Dashboard() {
             }}
             className="bg-[#fff]"
           >
-            <ToggleGroupItem value="month" aria-label="Filtrar por mes">
+            <ToggleGroupItem value="month" aria-label="Filtrar por mês">
               Mês
             </ToggleGroupItem>
             <ToggleGroupItem value="currentWeek" aria-label="Filtrar por semana atual">
@@ -303,3 +303,4 @@ export default function Dashboard() {
     </div>
   )
 }
+

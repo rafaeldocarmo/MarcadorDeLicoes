@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { Pie, PieChart, Label } from "recharts"
 
@@ -117,3 +117,4 @@ export default function GeralAlunoChart({ data }: Props) {
     </Card>
   )
 }
+

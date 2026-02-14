@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import {
   Bar,
@@ -34,15 +34,15 @@ type Props = {
 
 const chartConfig = {
   fez: { label: "Fez", color: "var(--chart-2)" },
-  naoFez: { label: "Nao fez", color: "var(--chart-5)" },
+  naoFez: { label: "Não fez", color: "var(--chart-5)" },
 } satisfies ChartConfig
 
 export default function DisciplinaChart({ data }: Props) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Licoes por Disciplina</CardTitle>
-        <CardDescription>Fez vs Nao fez</CardDescription>
+        <CardTitle>Lições por Disciplina</CardTitle>
+        <CardDescription>Fez vs Não fez</CardDescription>
       </CardHeader>
 
       <CardContent>
@@ -84,3 +84,4 @@ export default function DisciplinaChart({ data }: Props) {
     </Card>
   )
 }
+

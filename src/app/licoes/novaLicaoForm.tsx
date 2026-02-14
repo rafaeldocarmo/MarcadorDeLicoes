@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useTransition } from "react"
 import {
@@ -28,7 +28,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { addDays, format } from "date-fns"
-import { Input } from "@/components/ui/input"
 
 type SubLicaoForm = {
   disciplina: string
@@ -75,7 +74,7 @@ export default function NovaLicaoForm({
     )
   }
 
-  function handleSubmit(formData: FormData) {
+  function handleSubmit() {
     if (!hasCatalogo) return
 
     startTransition(async () => {
@@ -85,7 +84,6 @@ export default function NovaLicaoForm({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          titulo: formData.get("titulo") as string,
           dataEnvio: dataEnvio.toISOString(),
           dataEntrega: dataEntrega.toISOString(),
           subLicoes,
@@ -103,10 +101,10 @@ export default function NovaLicaoForm({
     <div className="min-h-screen flex items-center justify-center bg-muted/40 p-6">
       <Card className="w-full max-w-3xl rounded-2xl shadow-xl">
         <CardHeader>
-          <CardTitle className="text-2xl font-semibold">Criar Nova Lição</CardTitle>
+          <CardTitle className="text-2xl font-semibold">Criar nova lição</CardTitle>
           {!hasLicoes ? (
             <CardDescription>
-              Esta será sua primeira lição. Crie uma lição para comecar a visualizar os dados da sala.
+              Esta será sua primeira lição. Crie uma lição para começar a visualizar os dados da sala.
             </CardDescription>
           ) : null}
           {!hasCatalogo ? (
@@ -118,12 +116,7 @@ export default function NovaLicaoForm({
 
         <CardContent>
           <form action={handleSubmit} className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="space-y-1 md:col-span-2">
-                <Label htmlFor="titulo">Título</Label>
-                <Input type="text" id="titulo" name="titulo" required className="input w-full" />
-              </div>
-
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-1">
                 <Label>Data de Envio</Label>
                 <Popover>
@@ -162,7 +155,6 @@ export default function NovaLicaoForm({
             </div>
 
             <div className="space-y-6">
-              <h2 className="text-xl font-semibold">Sublições</h2>
               {subLicoes.map((sub, index) => (
                 <div
                   key={index}
@@ -233,7 +225,7 @@ export default function NovaLicaoForm({
                 </div>
               ))}
               <Button type="button" variant="outline" onClick={adicionarSubLicao}>
-                + Adicionar Lição
+                + Adicionar lição
               </Button>
             </div>
 
@@ -246,7 +238,7 @@ export default function NovaLicaoForm({
                 <span />
               )}
               <Button disabled={isPending || !hasCatalogo} className="rounded-2xl px-6">
-                {isPending ? "Criando..." : "Criar Lição"}
+                {isPending ? "Criando..." : "Criar lição"}
               </Button>
             </div>
           </form>
@@ -255,3 +247,5 @@ export default function NovaLicaoForm({
     </div>
   )
 }
+
+

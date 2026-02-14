@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Nao autorizado" }, { status: 401 });
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
     const body = (await req.json()) as Partial<SalvarEntregasPayload>;
@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     const entregas = body.entregas ?? [];
 
     if (!licaoId || !Array.isArray(entregas)) {
-      return NextResponse.json({ error: "Dados invalidos" }, { status: 400 });
+      return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
     }
 
     const licao = await prisma.licao.findFirst({
@@ -56,7 +56,7 @@ export async function POST(req: Request) {
     });
 
     if (!licao) {
-      return NextResponse.json({ error: "Licao nao encontrada" }, { status: 404 });
+      return NextResponse.json({ error: "Lição não encontrada" }, { status: 404 });
     }
 
     const alunosValidos = new Set(licao.turma.alunos.map((aluno) => aluno.id));
@@ -98,3 +98,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Erro ao salvar entregas" }, { status: 500 });
   }
 }
+

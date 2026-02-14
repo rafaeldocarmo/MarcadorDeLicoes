@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import {
   Bar,
@@ -73,3 +73,4 @@ export default function TimelineChart({ data }: Props) {
     </Card>
   )
 }
+

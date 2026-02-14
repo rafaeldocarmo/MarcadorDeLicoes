@@ -20,7 +20,7 @@ export async function POST(req: Request) {
   const session = await getServerSession(authOptions)
 
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Nao autorizado" }, { status: 401 })
+    return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
   }
 
   const body = (await req.json()) as TurmaPayload
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
   const materiais = normalizeList(body.materiais)
 
   if (!nome || !alunos.length || !disciplinas.length || !materiais.length) {
-    return NextResponse.json({ error: "Dados invalidos" }, { status: 400 })
+    return NextResponse.json({ error: "Dados inválidos" }, { status: 400 })
   }
 
   const turma = await prisma.turma.create({
@@ -58,7 +58,7 @@ export async function PUT(req: Request) {
   const session = await getServerSession(authOptions)
 
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Nao autorizado" }, { status: 401 })
+    return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
   }
 
   const body = (await req.json()) as TurmaPayload
@@ -69,7 +69,7 @@ export async function PUT(req: Request) {
   const materiais = normalizeList(body.materiais)
 
   if (!nome || !alunos.length || !disciplinas.length || !materiais.length) {
-    return NextResponse.json({ error: "Dados invalidos" }, { status: 400 })
+    return NextResponse.json({ error: "Dados inválidos" }, { status: 400 })
   }
 
   const turma = await prisma.turma.findFirst({
@@ -78,7 +78,7 @@ export async function PUT(req: Request) {
   })
 
   if (!turma) {
-    return NextResponse.json({ error: "Turma nao encontrada" }, { status: 404 })
+    return NextResponse.json({ error: "Turma não encontrada" }, { status: 404 })
   }
 
   const nomesAtuais = new Set(turma.alunos.map((aluno: { nome: string }) => aluno.nome))
@@ -99,3 +99,4 @@ export async function PUT(req: Request) {
 
   return NextResponse.json(turmaAtualizada)
 }
+

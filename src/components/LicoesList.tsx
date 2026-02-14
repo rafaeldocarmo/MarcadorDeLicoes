@@ -1,9 +1,8 @@
-"use client"
+﻿"use client"
 
 import { Fragment, useEffect, useState } from "react"
 import Link from "next/link"
 import { ChevronDown, ChevronRight } from "lucide-react"
-import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import {
   Select,
@@ -23,7 +22,6 @@ import {
 
 type Licao = {
   id: string
-  titulo: string
   dataEnvio: string
   dataEntrega: string
   subLicoes: {
@@ -47,7 +45,6 @@ type LicoesApiResponse = {
 
 export default function LicoesList({ pageSize = 6 }: Props) {
   const [licoes, setLicoes] = useState<Licao[]>([])
-  const [search, setSearch] = useState("")
   const [disciplinaFilter, setDisciplinaFilter] = useState<string | undefined>()
   const [materialFilter, setMaterialFilter] = useState<string | undefined>()
   const [page, setPage] = useState(1)
@@ -65,7 +62,6 @@ export default function LicoesList({ pageSize = 6 }: Props) {
       const params = new URLSearchParams()
       params.append("page", page.toString())
       params.append("pageSize", pageSize.toString())
-      if (search) params.append("search", search)
       if (disciplinaFilter) params.append("disciplina", disciplinaFilter)
       if (materialFilter) params.append("material", materialFilter)
 
@@ -85,28 +81,18 @@ export default function LicoesList({ pageSize = 6 }: Props) {
     }
 
     fetchLicoes()
-  }, [page, pageSize, search, disciplinaFilter, materialFilter])
+  }, [page, pageSize, disciplinaFilter, materialFilter])
 
   return (
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <h2 className="text-2xl font-semibold">Lições</h2>
         <Button asChild>
-          <Link href="/licoes">Criar nova Lição</Link>
+          <Link href="/licoes">Criar nova lição</Link>
         </Button>
       </div>
 
       <div className="flex flex-wrap gap-2 items-center justify-end">
-        <Input
-          placeholder="Buscar por título..."
-          value={search}
-          onChange={(e) => {
-            setPage(1)
-            setSearch(e.target.value)
-          }}
-          className="w-48"
-        />
-
         <Select
           onValueChange={(v) => {
             setPage(1)
@@ -151,17 +137,16 @@ export default function LicoesList({ pageSize = 6 }: Props) {
           <TableHeader>
             <TableRow>
               <TableHead className="w-12 px-2" />
-              <TableHead className="min-w-[260px]">Título</TableHead>
               <TableHead className="w-[140px]">Data de envio</TableHead>
               <TableHead className="w-[140px]">Data de entrega</TableHead>
-              <TableHead className="w-[140px] text-center">Qtd. sublições</TableHead>
+              <TableHead className="w-[140px] text-center">Qtd. lições</TableHead>
               <TableHead className="w-[160px] text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {licoes.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
+                <TableCell colSpan={5} className="h-24 text-center">
                   Nenhuma lição encontrada.
                 </TableCell>
               </TableRow>
@@ -175,12 +160,11 @@ export default function LicoesList({ pageSize = 6 }: Props) {
                         variant="ghost"
                         size="icon"
                         onClick={() => toggleExpanded(licao.id)}
-                        aria-label="Expandir sublicoes"
+                        aria-label="Expandir lições"
                       >
                         {expanded[licao.id] ? <ChevronDown /> : <ChevronRight />}
                       </Button>
                     </TableCell>
-                    <TableCell className="font-medium">{licao.titulo}</TableCell>
                     <TableCell>{new Date(licao.dataEnvio).toLocaleDateString()}</TableCell>
                     <TableCell>{new Date(licao.dataEntrega).toLocaleDateString()}</TableCell>
                     <TableCell className="text-center">{licao.subLicoes.length}</TableCell>
@@ -195,7 +179,7 @@ export default function LicoesList({ pageSize = 6 }: Props) {
 
                   {expanded[licao.id] ? (
                     <TableRow>
-                      <TableCell colSpan={6}>
+                      <TableCell colSpan={5}>
                         <div className="rounded-md border bg-muted/30 p-3">
                           <Table>
                             <TableHeader>
@@ -246,3 +230,5 @@ export default function LicoesList({ pageSize = 6 }: Props) {
     </div>
   )
 }
+
+
