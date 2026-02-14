@@ -6,6 +6,7 @@ import { authOptions } from "@/lib/auth";
 import Dashboard from "@/components/Dashboard";
 import NovaTurmaForm from "@/components/NovaTurmaForm";
 import { prisma } from "@/lib/prisma";
+import LogoutButton from "@/components/logout-button";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,9 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen bg-muted/40 p-8">
       <div className="max-w-7xl mx-auto space-y-10">
+        <div className="flex justify-end">
+          <LogoutButton />
+        </div>
 
         {!turma ? <NovaTurmaForm /> : 
         <>

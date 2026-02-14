@@ -108,6 +108,23 @@ export default function Dashboard() {
   const [days, setDays] = useState<number[]>([])
   const [loading, setLoading] = useState(true)
   const [sorting, setSorting] = useState<SortingState>([])
+  const [copied, setCopied] = useState(false)
+
+  const getDayCellText = useCallback((row: DashboardRow, day: number) => {
+    const values = row.porDia[String(day)]
+
+    if (!values || values.total === 0) {
+      return "-"
+    }
+
+    if (values.fez === values.total) {
+      return "OK"
+    }
+
+    return values.pendentes.length
+      ? values.pendentes.map(abbreviateDisciplina).join(", ")
+      : "Pendente"
+  }, [])
 
   const loadDashboard = useCallback(async (from: Date, to: Date, showLoading = true) => {
     if (showLoading) {
@@ -180,23 +197,17 @@ export default function Dashboard() {
           </Button>
         ),
         cell: ({ row }: { row: { original: DashboardRow } }) => {
-          const values = row.original.porDia[String(day)]
+          const value = getDayCellText(row.original, day)
 
-          if (!values || values.total === 0) {
+          if (value === "-") {
             return <span className="text-muted-foreground">-</span>
           }
 
-          if (values.fez === values.total) {
+          if (value === "OK") {
             return <span className="font-semibold text-green-600">OK</span>
           }
 
-          return (
-            <span className="text-red-600">
-              {values.pendentes.length
-                ? values.pendentes.map(abbreviateDisciplina).join(", ")
-                : "Pendente"}
-            </span>
-          )
+          return <span className="text-red-600">{value}</span>
         },
       })),
       {
@@ -217,7 +228,7 @@ export default function Dashboard() {
     ]
 
     return baseColumns
-  }, [days])
+  }, [days, getDayCellText])
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
@@ -228,6 +239,33 @@ export default function Dashboard() {
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   })
+
+  const handleCopy = useCallback(async () => {
+    const headers = ["Nome do aluno", ...days.map(String), "Total"]
+    const lines = [headers.join("\t")]
+
+    table.getRowModel().rows.forEach((tableRow) => {
+      const row = tableRow.original
+      const dayValues = days.map((day) => getDayCellText(row, day))
+      lines.push([row.nome, ...dayValues, `${row.totalFez}/${row.totalGeral}`].join("\t"))
+    })
+
+    const text = lines.join("\n")
+
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text)
+    } else {
+      const textArea = document.createElement("textarea")
+      textArea.value = text
+      document.body.appendChild(textArea)
+      textArea.select()
+      document.execCommand("copy")
+      document.body.removeChild(textArea)
+    }
+
+    setCopied(true)
+    window.setTimeout(() => setCopied(false), 2000)
+  }, [days, getDayCellText, table])
 
   if (loading) return <p>Carregando...</p>
 
@@ -264,9 +302,14 @@ export default function Dashboard() {
           />
         </div>
 
-        <Button asChild variant="outline">
-          <Link href="/home/editar-sala">Alterar sala</Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => void handleCopy()}>
+            {copied ? "Copiado" : "Copiar tabela"}
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/home/editar-sala">Alterar sala</Link>
+          </Button>
+        </div>
       </div>
 
       <div className="rounded-md border bg-background overflow-x-auto">
