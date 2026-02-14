@@ -170,14 +170,21 @@ export default function MarcarEntregaPorAluno({
         </div>
         
         <div className="flex justify-between">
-          <Button className="rounded-2xl px-6" variant="outline"><Link href='/home'>Voltar para Home</Link></Button>   
-          <Button
-            onClick={handleSalvar}
-            disabled={isPending }
-            className="rounded-2xl px-6"
-          >
-            {isPending ? "Salvando..." : "Salvar alterações"}
+          <Button className="rounded-2xl px-6" variant="outline">
+            <Link href="/home">Voltar para Home</Link>
           </Button>
+          <div className="flex gap-2">
+            <Button asChild className="rounded-2xl px-6" variant="outline">
+              <Link href={`/licoes/${licao.id}/editar`}>Editar lição</Link>
+            </Button>
+            <Button
+              onClick={handleSalvar}
+              disabled={isPending}
+              className="rounded-2xl px-6"
+            >
+              {isPending ? "Salvando..." : "Salvar alterações"}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
