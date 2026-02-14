@@ -23,7 +23,7 @@ export function LoginForm({
         <CardHeader className="text-center">
           <CardTitle className="text-xl">Marcador de Lições</CardTitle>
           <CardDescription>
-            Para começar, faça login com o Google.
+            Para começar, faça login com Google ou Office 365.
           </CardDescription>
         </CardHeader>
         <CardContent>
