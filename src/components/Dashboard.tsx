@@ -43,6 +43,24 @@ type DashboardResponse = {
 
 type FilterMode = "month" | "currentWeek"
 
+function abbreviateDisciplina(disciplina: string) {
+  const normalized = disciplina.trim().replace(/\s+/g, " ")
+  const words = normalized.split(" ").filter(Boolean)
+  const stopWords = new Set(["de", "da", "do", "das", "dos", "e"])
+  const meaningfulWords = words.filter((word) => !stopWords.has(word.toLowerCase()))
+  const baseWords = meaningfulWords.length > 0 ? meaningfulWords : words
+
+  if (baseWords.length <= 1) {
+    return baseWords[0]?.slice(0, 3).toUpperCase() ?? ""
+  }
+
+  if (baseWords.length === 2) {
+    return `${baseWords[0][0] ?? ""}${baseWords[1][0] ?? ""}`.toUpperCase()
+  }
+
+  return baseWords.map((word) => word[0] ?? "").join("").toUpperCase()
+}
+
 function getCurrentMonthValue() {
   const now = new Date()
   const year = now.getUTCFullYear()
@@ -175,7 +193,9 @@ export default function Dashboard() {
 
           return (
             <span className="text-red-600">
-              {values.pendentes.length ? values.pendentes.join(", ") : "Pendente"}
+              {values.pendentes.length
+                ? values.pendentes.map(abbreviateDisciplina).join(", ")
+                : "Pendente"}
             </span>
           )
         },
