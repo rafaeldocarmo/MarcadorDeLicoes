@@ -29,12 +29,14 @@ type Props = {
     disciplina: string
     fez: number
     naoFez: number
+    falta: number
   }[]
 }
 
 const chartConfig = {
   fez: { label: "Fez", color: "var(--chart-2)" },
   naoFez: { label: "Não fez", color: "var(--chart-5)" },
+  falta: { label: "FA", color: "#facc15" },
 } satisfies ChartConfig
 
 export default function DisciplinaChart({ data }: Props) {
@@ -77,6 +79,18 @@ export default function DisciplinaChart({ data }: Props) {
                   className="fill-foreground text-xs"
                 />
               </Bar>
+
+              <Bar
+                dataKey="falta"
+                fill="#facc15"
+                radius={[6, 6, 0, 0]}
+              >
+                <LabelList
+                  dataKey="falta"
+                  position="top"
+                  className="fill-foreground text-xs"
+                />
+              </Bar>
             </BarChart>
           </ChartContainer>
         </div>
@@ -84,4 +98,3 @@ export default function DisciplinaChart({ data }: Props) {
     </Card>
   )
 }
-

@@ -105,6 +105,7 @@ model SubLicao {
 enum StatusEntrega {
   FEZ
   NAO_FEZ
+  FALTA
 }
 
 model EntregaSubLicao {

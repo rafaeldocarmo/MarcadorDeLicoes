@@ -1,0 +1,1 @@
+ALTER TYPE "StatusEntrega" ADD VALUE 'FALTA';

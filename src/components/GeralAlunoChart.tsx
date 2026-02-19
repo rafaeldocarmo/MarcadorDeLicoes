@@ -21,6 +21,7 @@ type Props = {
   data: {
     fez: number
     naoFez: number
+    falta: number
   }
 }
 
@@ -38,6 +39,12 @@ export default function GeralAlunoChart({ data }: Props) {
       value: data.naoFez,
       fill: "#ff3939bd",
     },
+    {
+      status: "falta",
+      label: "FA",
+      value: data.falta,
+      fill: "#facc15",
+    },
   ]
 
   const total = chartData.reduce((acc: number, curr: { value: number }) => acc + curr.value, 0)
@@ -53,6 +60,10 @@ export default function GeralAlunoChart({ data }: Props) {
     naoFez: {
       label: "Não fez",
       color: "#ff3939bd",
+    },
+    falta: {
+      label: "FA",
+      color: "#facc15",
     },
   } satisfies ChartConfig
 

@@ -1,10 +1,11 @@
 ﻿import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { StatusEntrega } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 
-type Status = "FEZ" | "NAO_FEZ";
+type Status = "FEZ" | "NAO_FEZ" | "FALTA";
 
 type EntregaPayload = {
   alunoId: string;
@@ -28,6 +29,18 @@ export async function POST(req: Request) {
     const body = (await req.json()) as Partial<SalvarEntregasPayload>;
     const licaoId = body.licaoId?.trim() ?? "";
     const entregas = body.entregas ?? [];
+    const statusPermitidos = new Set<string>(Object.values(StatusEntrega));
+    const recebeuFalta = entregas.some((entrega) => entrega?.status === "FALTA");
+
+    if (recebeuFalta && !statusPermitidos.has("FALTA")) {
+      return NextResponse.json(
+        {
+          error:
+            "Status 'FALTA' não está disponível no banco ainda. Rode a migration e regenere o Prisma Client.",
+        },
+        { status: 409 }
+      );
+    }
 
     if (!licaoId || !Array.isArray(entregas)) {
       return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
@@ -64,7 +77,7 @@ export async function POST(req: Request) {
 
     const entregasFiltradas = entregas.filter(
       (entrega): entrega is EntregaPayload =>
-        (entrega.status === "FEZ" || entrega.status === "NAO_FEZ") &&
+        statusPermitidos.has(entrega.status) &&
         alunosValidos.has(entrega.alunoId) &&
         subLicoesValidas.has(entrega.subLicaoId)
     );
@@ -98,5 +111,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Erro ao salvar entregas" }, { status: 500 });
   }
 }
-
 

@@ -32,12 +32,12 @@ type DashboardRow = {
   nome: string
   totalFez: number
   totalGeral: number
-  porDia: Record<string, { total: number; fez: number; pendentes: string[] }>
+  porDia: Record<string, { total: number; fez: number; falta: number; pendentes: string[] }>
 }
 
 type DashboardResponse = {
   mes: string
-  dias: number[]
+  dias: Array<{ key: string; label: number }>
   rows: DashboardRow[]
 }
 
@@ -105,16 +105,20 @@ export default function Dashboard() {
   const [filterMode, setFilterMode] = useState<FilterMode>("month")
   const [selectedMonth, setSelectedMonth] = useState<string>(getCurrentMonthValue())
   const [rows, setRows] = useState<DashboardRow[]>([])
-  const [days, setDays] = useState<number[]>([])
+  const [days, setDays] = useState<Array<{ key: string; label: number }>>([])
   const [loading, setLoading] = useState(true)
   const [sorting, setSorting] = useState<SortingState>([])
   const [copied, setCopied] = useState(false)
 
-  const getDayCellText = useCallback((row: DashboardRow, day: number) => {
-    const values = row.porDia[String(day)]
+  const getDayCellText = useCallback((row: DashboardRow, dayKey: string) => {
+    const values = row.porDia[dayKey]
 
     if (!values || values.total === 0) {
       return "-"
+    }
+
+    if (values.falta === values.total) {
+      return "FA"
     }
 
     if (values.fez === values.total) {
@@ -185,19 +189,19 @@ export default function Dashboard() {
         cell: ({ row }) => row.original.nome,
       },
       ...days.map((day) => ({
-        id: `dia-${day}`,
-        accessorFn: (row: DashboardRow) => row.porDia[String(day)]?.fez ?? 0,
+        id: `dia-${day.key}`,
+        accessorFn: (row: DashboardRow) => row.porDia[day.key]?.fez ?? 0,
         header: ({ column }: HeaderContext<DashboardRow, unknown>) => (
           <Button
             variant="ghost"
             className="h-8 px-2 justify-center w-full"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            {day}
+            {day.label}
           </Button>
         ),
         cell: ({ row }: { row: { original: DashboardRow } }) => {
-          const value = getDayCellText(row.original, day)
+          const value = getDayCellText(row.original, day.key)
 
           if (value === "-") {
             return <span className="text-muted-foreground">-</span>
@@ -205,6 +209,10 @@ export default function Dashboard() {
 
           if (value === "OK") {
             return <span className="font-semibold text-green-600">OK</span>
+          }
+
+          if (value === "FA") {
+            return <span className="font-semibold text-yellow-600">FA</span>
           }
 
           return <span className="text-red-600">{value}</span>
@@ -241,12 +249,12 @@ export default function Dashboard() {
   })
 
   const handleCopy = useCallback(async () => {
-    const headers = ["Nome do aluno", ...days.map(String), "Total"]
+    const headers = ["Nome do aluno", ...days.map((day) => String(day.label)), "Total"]
     const lines = [headers.join("\t")]
 
     table.getRowModel().rows.forEach((tableRow) => {
       const row = tableRow.original
-      const dayValues = days.map((day) => getDayCellText(row, day))
+      const dayValues = days.map((day) => getDayCellText(row, day.key))
       lines.push([row.nome, ...dayValues, `${row.totalFez}/${row.totalGeral}`].join("\t"))
     })
 

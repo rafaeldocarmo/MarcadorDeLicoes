@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from "next/server"
 type DiaResumo = {
   total: number
   fez: number
+  falta: number
   pendentes: string[]
 }
 
@@ -14,6 +15,11 @@ type ResumoAlunoItem = {
   totalFez: number
   totalGeral: number
   porDia: Record<string, DiaResumo>
+}
+
+type DiaColuna = {
+  key: string
+  label: number
 }
 
 function getMonthRange(fromParam: string | null, toParam: string | null) {
@@ -39,7 +45,7 @@ function getMonthRange(fromParam: string | null, toParam: string | null) {
 }
 
 function getDaysInRange(from: Date, to: Date) {
-  const days: number[] = []
+  const days: DiaColuna[] = []
   const cursor = new Date(
     Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate(), 0, 0, 0, 0)
   )
@@ -48,7 +54,10 @@ function getDaysInRange(from: Date, to: Date) {
   )
 
   while (cursor.getTime() <= end.getTime()) {
-    days.push(cursor.getUTCDate())
+    days.push({
+      key: cursor.toISOString().split("T")[0],
+      label: cursor.getUTCDate(),
+    })
     cursor.setUTCDate(cursor.getUTCDate() + 1)
   }
 
@@ -82,7 +91,7 @@ export async function GET(req: NextRequest) {
           where: {
             subLicao: {
               licao: {
-                dataEnvio: {
+                dataEntrega: {
                   gte: monthStart,
                   lte: monthEnd,
                 },
@@ -96,7 +105,7 @@ export async function GET(req: NextRequest) {
                 disciplina: true,
                 licao: {
                   select: {
-                    dataEnvio: true,
+                    dataEntrega: true,
                   },
                 },
               },
@@ -110,13 +119,13 @@ export async function GET(req: NextRequest) {
     const resumoPorAluno: ResumoAlunoItem[] = alunos.map(aluno => {
       const porDiaComSet = Object.fromEntries(
         days.map((day) => [
-          String(day),
-          { total: 0, fez: 0, pendentes: new Set<string>() },
+          day.key,
+          { total: 0, fez: 0, falta: 0, pendentes: new Set<string>() },
         ])
-      ) as Record<string, { total: number; fez: number; pendentes: Set<string> }>
+      ) as Record<string, { total: number; fez: number; falta: number; pendentes: Set<string> }>
 
       aluno.entregas.forEach((entrega) => {
-        const day = String(entrega.subLicao.licao.dataEnvio.getUTCDate())
+        const day = entrega.subLicao.licao.dataEntrega.toISOString().split("T")[0]
         const item = porDiaComSet[day]
 
         if (!item) return
@@ -124,6 +133,9 @@ export async function GET(req: NextRequest) {
         item.total += 1
         if (entrega.status === "FEZ") {
           item.fez += 1
+        } else if (entrega.status === "FALTA") {
+          item.falta += 1
+          item.pendentes.add(entrega.subLicao.disciplina)
         } else {
           item.pendentes.add(entrega.subLicao.disciplina)
         }
@@ -135,6 +147,7 @@ export async function GET(req: NextRequest) {
           {
             total: value.total,
             fez: value.fez,
+            falta: value.falta,
             pendentes: Array.from(value.pendentes).sort((a, b) =>
               a.localeCompare(b, "pt-BR")
             ),

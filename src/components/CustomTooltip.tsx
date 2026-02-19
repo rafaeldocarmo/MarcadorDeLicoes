@@ -3,6 +3,7 @@ import type { TooltipProps } from "recharts"
 type TooltipData = {
   disciplinasNaoFez?: string[]
   disciplinasFez?: string[]
+  disciplinasFalta?: string[]
 }
 
 export function CustomTooltip({ active, payload, label }: TooltipProps<number, string>) {
@@ -22,10 +23,19 @@ export function CustomTooltip({ active, payload, label }: TooltipProps<number, s
           ))}
         </div>
       </div>
+
+      {/* FALTA */}
+      <div>
+        <div className="list-disc list-inside text-muted-foreground text-yellow-600">
+          {data.disciplinasFalta?.map((d: string) => (
+            <p key={d}>FA - {d}</p>
+          ))}
+        </div>
+      </div>
       
       {/* FEZ */}
       <div>
-        <div className="list-disc list-inside text-muted-foreground text-green-500">
+        <div className="list-disc list-inside text-muted-foreground text-emerald-600">
           {data.disciplinasFez?.map((d: string) => (
             <p key={d}>{d}</p>
           ))}

@@ -29,12 +29,14 @@ type Props = {
     data: string
     fez: number
     naoFez: number
+    falta: number
   }[]
 }
 
 const chartConfig = {
   fez: { label: "Fez", color: "var(--chart-2)" },
   naoFez: { label: "Não fez", color: "var(--chart-5)" },
+  falta: { label: "FA", color: "#facc15" },
 } satisfies ChartConfig
 
 export default function TimelineChart({ data }: Props) {
@@ -59,6 +61,11 @@ export default function TimelineChart({ data }: Props) {
                 stackId="a"
                 fill="#2cba2ca6"
                 radius={[0, 0, 4, 4]}
+              />
+              <Bar
+                dataKey="falta"
+                stackId="a"
+                fill="#facc15"
               />
               <Bar
                 dataKey="naoFez"

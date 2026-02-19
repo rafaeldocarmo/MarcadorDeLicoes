@@ -7,27 +7,33 @@ type TimelineItem = {
   data: string
   fez: number
   naoFez: number
+  falta: number
   disciplinasFez: string[]
   disciplinasNaoFez: string[]
+  disciplinasFalta: string[]
 }
 
 type DisciplinaItem = {
   disciplina: string
   fez: number
   naoFez: number
+  falta: number
 }
 
 type TimelineAccumulatorItem = {
   data: string
   fez: number
   naoFez: number
+  falta: number
   disciplinasFez: Set<string>
   disciplinasNaoFez: Set<string>
+  disciplinasFalta: Set<string>
 }
 
 type GeralResumo = {
   fez: number
   naoFez: number
+  falta: number
 }
 
 function getEntregasAluno(alunoId: string) {
@@ -95,8 +101,10 @@ export async function GET(req: NextRequest) {
         data: dataEnvio,
         fez: 0,
         naoFez: 0,
+        falta: 0,
         disciplinasFez: new Set<string>(),
-        disciplinasNaoFez: new Set<string>()
+        disciplinasNaoFez: new Set<string>(),
+        disciplinasFalta: new Set<string>()
       }
     }
 
@@ -105,9 +113,12 @@ export async function GET(req: NextRequest) {
     if (entrega.status === "FEZ") {
       timelineMap[dataEnvio].fez++
       timelineMap[dataEnvio].disciplinasFez.add(disciplina)
-    } else {
+    } else if (entrega.status === "NAO_FEZ") {
       timelineMap[dataEnvio].naoFez++
       timelineMap[dataEnvio].disciplinasNaoFez.add(disciplina)
+    } else {
+      timelineMap[dataEnvio].falta++
+      timelineMap[dataEnvio].disciplinasFalta.add(disciplina)
     }
   })
 
@@ -115,8 +126,10 @@ export async function GET(req: NextRequest) {
     data: item.data,
     fez: item.fez,
     naoFez: item.naoFez,
+    falta: item.falta,
     disciplinasFez: Array.from(item.disciplinasFez),
-    disciplinasNaoFez: Array.from(item.disciplinasNaoFez)
+    disciplinasNaoFez: Array.from(item.disciplinasNaoFez),
+    disciplinasFalta: Array.from(item.disciplinasFalta)
   }))
 
 
@@ -127,11 +140,12 @@ export async function GET(req: NextRequest) {
     const disciplina = entrega.subLicao.disciplina
 
     if (!disciplinaMap[disciplina]) {
-      disciplinaMap[disciplina] = { disciplina, fez: 0, naoFez: 0 }
+      disciplinaMap[disciplina] = { disciplina, fez: 0, naoFez: 0, falta: 0 }
     }
 
     if (entrega.status === "FEZ") disciplinaMap[disciplina].fez++
-    else disciplinaMap[disciplina].naoFez++
+    else if (entrega.status === "NAO_FEZ") disciplinaMap[disciplina].naoFez++
+    else disciplinaMap[disciplina].falta++
   })
 
   const disciplinas: DisciplinaItem[] = Object.values(disciplinaMap)
@@ -140,10 +154,11 @@ export async function GET(req: NextRequest) {
   const geral = entregas.reduce(
     (acc: GeralResumo, entrega: EntregaAnalytics): GeralResumo => {
       if (entrega.status === "FEZ") acc.fez++
-      else acc.naoFez++
+      else if (entrega.status === "NAO_FEZ") acc.naoFez++
+      else acc.falta++
       return acc
     },
-    { fez: 0, naoFez: 0 }
+    { fez: 0, naoFez: 0, falta: 0 }
   )
 
   return NextResponse.json({ timeline, disciplinas, geral })

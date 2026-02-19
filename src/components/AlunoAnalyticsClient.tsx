@@ -26,14 +26,17 @@ type TimelineItem = {
   data: string
   fez: number
   naoFez: number
+  falta: number
   disciplinasFez: string[]
   disciplinasNaoFez: string[]
+  disciplinasFalta: string[]
 }
 
 type DisciplinaItem = {
   disciplina: string
   fez: number
   naoFez: number
+  falta: number
 }
 
 type AlunoAnalyticsData = {
@@ -42,6 +45,7 @@ type AlunoAnalyticsData = {
   geral: {
     fez: number
     naoFez: number
+    falta: number
   }
 }
 

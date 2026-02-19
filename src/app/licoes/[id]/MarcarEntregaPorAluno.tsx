@@ -8,7 +8,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { BookOpen, FileText, Layers } from "lucide-react";
 
-type Status = "FEZ" | "NAO_FEZ";
+type Status = "FEZ" | "NAO_FEZ" | "FALTA";
 
 type Aluno = {
   id: string;
@@ -72,6 +72,23 @@ export default function MarcarEntregaPorAluno({
     return map;
   });
 
+  const [faltasPorAluno, setFaltasPorAluno] = useState(() => {
+    const faltas = new Set<string>();
+
+    for (const aluno of licao.turma.alunos) {
+      const todosFalta = licao.subLicoes.every((sub) => {
+        const key = `${aluno.id}-${sub.id}`;
+        return estadoEntregas.get(key) === "FALTA";
+      });
+
+      if (todosFalta && licao.subLicoes.length > 0) {
+        faltas.add(aluno.id);
+      }
+    }
+
+    return faltas;
+  });
+
   function toggleStatus(
     alunoId: string,
     subLicaoId: string,
@@ -82,6 +99,26 @@ export default function MarcarEntregaPorAluno({
     setEstadoEntregas((prev: Map<string, Status>) => {
       const newMap = new Map<string, Status>(prev);
       newMap.set(key, checked ? "FEZ" : "NAO_FEZ");
+      return newMap;
+    });
+  }
+
+  function toggleFaltaAluno(alunoId: string, checked: boolean) {
+    setFaltasPorAluno((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(alunoId);
+      else next.delete(alunoId);
+      return next;
+    });
+
+    setEstadoEntregas((prev: Map<string, Status>) => {
+      const newMap = new Map<string, Status>(prev);
+
+      for (const sub of licao.subLicoes) {
+        const key = `${alunoId}-${sub.id}`;
+        newMap.set(key, checked ? "FALTA" : "NAO_FEZ");
+      }
+
       return newMap;
     });
   }
@@ -177,6 +214,10 @@ export default function MarcarEntregaPorAluno({
             <thead className="bg-muted">
               <tr>
                 <th className="text-left p-4">Aluno</th>
+                <th className="p-4 text-center">
+                  <div className="font-medium text-yellow-700">FA</div>
+                  <div className="text-xs text-muted-foreground">Falta na lição</div>
+                </th>
                 {licao.subLicoes.map((sub: SubLicao) => (
                   <th key={sub.id} className="p-4 text-center">
                     <div className="font-medium">
@@ -200,6 +241,16 @@ export default function MarcarEntregaPorAluno({
                     {aluno.nome}
                   </td>
 
+                  <td className="p-4 text-center">
+                    <Switch
+                      checked={faltasPorAluno.has(aluno.id)}
+                      disabled={isPending}
+                      onCheckedChange={(checked) =>
+                        toggleFaltaAluno(aluno.id, checked)
+                      }
+                    />
+                  </td>
+
                   {licao.subLicoes.map((sub: SubLicao) => {
                     const key = `${aluno.id}-${sub.id}`;
                     const status = estadoEntregas.get(key);
@@ -211,7 +262,7 @@ export default function MarcarEntregaPorAluno({
                       >
                         <Switch
                           checked={status === "FEZ"}
-                          disabled={isPending}
+                          disabled={isPending || faltasPorAluno.has(aluno.id)}
                           onCheckedChange={(checked) =>
                             toggleStatus(
                               aluno.id,
@@ -250,5 +301,4 @@ export default function MarcarEntregaPorAluno({
     </div>
   );
 }
-
 
