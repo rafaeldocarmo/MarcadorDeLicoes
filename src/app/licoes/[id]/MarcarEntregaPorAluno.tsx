@@ -6,7 +6,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { format } from "date-fns";
-import { BookOpen, FileText, Layers } from "lucide-react";
+import { BookOpen, FileText, Layers, Trash2 } from "lucide-react";
 
 type Status = "FEZ" | "NAO_FEZ" | "FALTA";
 
@@ -53,6 +53,7 @@ export default function MarcarEntregaPorAluno({
   entregas,
 }: Props) {
   const [isPending, startTransition] = useTransition();
+  const [isDeleting, setIsDeleting] = useState(false);
   const [shouldRedirectHome, setShouldRedirectHome] = useState(false);
 
   if (shouldRedirectHome) {
@@ -146,6 +147,22 @@ export default function MarcarEntregaPorAluno({
       if (!res.ok) return;
       setShouldRedirectHome(true);
     });
+  }
+
+  async function handleApagarLicao() {
+    const confirmed = window.confirm("Deseja apagar esta lição?");
+    if (!confirmed) return;
+
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/licoes/${licao.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) return;
+      setShouldRedirectHome(true);
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   return (
@@ -285,12 +302,22 @@ export default function MarcarEntregaPorAluno({
             <Link href="/home">Voltar para Home</Link>
           </Button>
           <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={isPending || isDeleting}
+              onClick={() => void handleApagarLicao()}
+              className="rounded-2xl px-6"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              {isDeleting ? "Apagando..." : "Apagar lição"}
+            </Button>
             <Button asChild className="rounded-2xl px-6" variant="outline">
               <Link href={`/licoes/${licao.id}/editar`}>Editar lição</Link>
             </Button>
             <Button
               onClick={handleSalvar}
-              disabled={isPending}
+              disabled={isPending || isDeleting}
               className="rounded-2xl px-6"
             >
               {isPending ? "Salvando..." : "Salvar alterações"}
@@ -301,4 +328,3 @@ export default function MarcarEntregaPorAluno({
     </div>
   );
 }
-

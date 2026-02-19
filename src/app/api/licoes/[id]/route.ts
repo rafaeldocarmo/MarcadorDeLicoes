@@ -152,3 +152,70 @@ export async function PUT(
     return NextResponse.json({ error: "Erro ao atualizar lição" }, { status: 500 })
   }
 }
+
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "NÃ£o autorizado" }, { status: 401 })
+    }
+
+    const { id } = await params
+    if (!id) {
+      return NextResponse.json({ error: "Dados invÃ¡lidos" }, { status: 400 })
+    }
+
+    const licao = await prisma.licao.findFirst({
+      where: {
+        id,
+        turma: {
+          userId: session.user.id,
+        },
+      },
+      select: {
+        id: true,
+        subLicoes: {
+          select: { id: true },
+        },
+      },
+    })
+
+    if (!licao) {
+      return NextResponse.json({ error: "LiÃ§Ã£o nÃ£o encontrada" }, { status: 404 })
+    }
+
+    const subLicaoIds = licao.subLicoes.map((sub) => sub.id)
+
+    await prisma.$transaction(async (tx) => {
+      if (subLicaoIds.length > 0) {
+        await tx.entregaSubLicao.deleteMany({
+          where: {
+            subLicaoId: {
+              in: subLicaoIds,
+            },
+          },
+        })
+
+        await tx.subLicao.deleteMany({
+          where: {
+            id: {
+              in: subLicaoIds,
+            },
+          },
+        })
+      }
+
+      await tx.licao.delete({
+        where: { id: licao.id },
+      })
+    })
+
+    return NextResponse.json({ ok: true })
+  } catch (error) {
+    console.error(error)
+    return NextResponse.json({ error: "Erro ao apagar liÃ§Ã£o" }, { status: 500 })
+  }
+}
