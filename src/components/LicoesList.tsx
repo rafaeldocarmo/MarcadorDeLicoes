@@ -219,12 +219,12 @@ export default function LicoesList() {
         </div>
       </div>
 
-      <div className="space-y-2 rounded-xl p-3 shadow-sm">
+      <div className="space-y-3 rounded-2xl border border-sky-100 bg-gradient-to-b from-white to-[#f4f8ff] p-3 shadow-sm">
         <div className="grid grid-cols-5 gap-2">
           {WEEK_DAYS.map((weekday) => (
             <div
               key={weekday}
-              className="rounded-md border border-border/60 bg-white py-1.5 text-center text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
+              className="rounded-lg border border-sky-100 bg-[#f8fbff] py-2 text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-sky-700/80"
             >
               {weekday}
             </div>
@@ -248,9 +248,22 @@ export default function LicoesList() {
                     openCreateLicaoWithDate(day)
                   }
                 }}
-                className="min-h-[85px] cursor-pointer rounded-md border border-border/70 bg-background p-1.5 shadow-[0_1px_0_rgba(0,0,0,0.03)] transition-colors hover:border-primary/40"
+                className={`min-h-[108px] cursor-pointer rounded-xl border p-2 shadow-[0_1px_0_rgba(0,0,0,0.03)] transition-all hover:-translate-y-0.5 ${
+                  dayLicoes.length > 0
+                    ? "border-sky-200 bg-[#f6faff] hover:border-sky-300"
+                    : "border-slate-200/80 bg-white/90 hover:border-sky-200"
+                }`}
               >
-                <div className="mb-1 text-right text-[11px] font-semibold text-muted-foreground">{day.getDate()}</div>
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full border border-sky-100 bg-white px-1.5 text-[11px] font-semibold text-slate-600">
+                    {day.getDate()}
+                  </span>
+                  {dayLicoes.length > 0 ? (
+                    <span className="rounded-full border border-sky-200 bg-sky-100/70 px-2 py-0.5 text-[10px] font-semibold text-sky-800">
+                      {dayLicoes.length}
+                    </span>
+                  ) : null}
+                </div>
 
                 <div className="space-y-1">
                   {dayLicoes.map((licao) => (
@@ -258,13 +271,13 @@ export default function LicoesList() {
                       key={licao.id}
                       href={`/licoes/${licao.id}`}
                       onClick={(event) => event.stopPropagation()}
-                      className="block rounded-md border border-[#d8d7d29b] bg-[#FFFDF2] px-1.5 py-1 text-[9px] leading-tight shadow-sm transition-colors hover:bg-primary/10"
+                      className="block rounded-lg border border-sky-200/80 bg-[#eef6ff] px-2 py-1.5 text-[9px] leading-tight shadow-sm transition-all hover:-translate-y-0.5 hover:border-sky-300 hover:bg-[#e4f0ff]"
                     >
-                      <div className="flex flex-wrap gap-1 font-medium">
+                      <div className="flex flex-wrap gap-1.5 font-medium">
                         {getDisciplinaBadges(licao).map((badge) => (
                           <span
                             key={`${licao.id}-${badge}`}
-                            className="rounded-sm border px-1 py-0.5 text-[14px] font-semibold text-primary/90"
+                            className="rounded-md border border-sky-200 bg-white px-1.5 py-0.5 text-[11px] font-semibold tracking-wide text-sky-900"
                           >
                             {badge}
                           </span>

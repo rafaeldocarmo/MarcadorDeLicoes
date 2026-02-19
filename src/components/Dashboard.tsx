@@ -249,13 +249,12 @@ export default function Dashboard() {
   })
 
   const handleCopy = useCallback(async () => {
-    const headers = ["Nome do aluno", ...days.map((day) => String(day.label)), "Total"]
-    const lines = [headers.join("\t")]
+    const lines: string[] = []
 
     table.getRowModel().rows.forEach((tableRow) => {
       const row = tableRow.original
       const dayValues = days.map((day) => getDayCellText(row, day.key))
-      lines.push([row.nome, ...dayValues, `${row.totalFez}/${row.totalGeral}`].join("\t"))
+      lines.push(dayValues.join("\t"))
     })
 
     const text = lines.join("\n")
@@ -275,14 +274,17 @@ export default function Dashboard() {
     window.setTimeout(() => setCopied(false), 2000)
   }, [days, getDayCellText, table])
 
-  if (loading) return <p>Carregando...</p>
+  if (loading) return <p className="text-sm text-slate-500">Carregando visão da classe...</p>
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-[1.5rem] font-semibold">Visão da classe</h1>
+    <div className="space-y-5">
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-700/80">Turma</p>
+        <h2 className="text-[1.4rem] font-semibold text-slate-900">Visão da classe</h2>
+      </div>
 
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-sky-100 bg-[#f8fbff] p-3">
+        <div className="flex flex-wrap items-center gap-3">
           <ToggleGroup
             type="single"
             value={filterMode}
@@ -291,7 +293,7 @@ export default function Dashboard() {
                 setFilterMode(value)
               }
             }}
-            className="bg-[#fff]"
+            className="rounded-lg border border-sky-100 bg-white p-1"
           >
             <ToggleGroupItem value="month" aria-label="Filtrar por mês">
               Mês
@@ -306,7 +308,7 @@ export default function Dashboard() {
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
             disabled={filterMode === "currentWeek"}
-            className="w-[180px]"
+            className="w-[180px] border-sky-100 bg-white"
           />
         </div>
 
@@ -320,7 +322,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="rounded-md border bg-background overflow-x-auto">
+      <div className="overflow-x-auto rounded-xl border border-sky-100 bg-white">
         <Table className="text-xs">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

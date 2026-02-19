@@ -68,7 +68,7 @@ export default function GeralAlunoChart({ data }: Props) {
   } satisfies ChartConfig
 
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col border-sky-100 bg-white/95 shadow-sm">
       <CardHeader className="items-center pb-0">
         <CardTitle>Resumo do Aluno</CardTitle>
         <CardDescription>Distribuição total</CardDescription>

@@ -41,7 +41,7 @@ const chartConfig = {
 
 export default function TimelineChart({ data }: Props) {
   return (
-    <Card>
+    <Card className="border-sky-100 bg-white/95 shadow-sm">
       <CardHeader>
         <CardTitle>Atividades por Dia</CardTitle>
         <CardDescription>Performance diária</CardDescription>

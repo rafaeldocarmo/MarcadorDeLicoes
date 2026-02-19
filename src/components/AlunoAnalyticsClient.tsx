@@ -69,24 +69,30 @@ export default function AlunoAnalyticsClient({ alunos }: Props) {
   }, [selectedAluno])
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-700/80">Aluno</p>
+        <h2 className="text-[1.4rem] font-semibold text-slate-900">Visão por aluno</h2>
+      </div>
 
-      <h1 className="text-[1.5rem] font-semibold">Visão por Aluno</h1>
+      <div className="rounded-xl border border-sky-100 bg-[#f8fbff] p-3">
+        <Select value={selectedAluno} onValueChange={setSelectedAluno}>
+          <SelectTrigger className="w-[280px] border-sky-100 bg-white">
+            <SelectValue placeholder="Selecionar aluno" />
+          </SelectTrigger>
+          <SelectContent>
+            {alunos.map((aluno: Aluno) => (
+              <SelectItem key={aluno.id} value={aluno.id}>
+                {aluno.nome}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
-      <Select value={selectedAluno} onValueChange={setSelectedAluno}>
-        <SelectTrigger className="w-[250px]">
-          <SelectValue placeholder="Selecionar aluno" />
-        </SelectTrigger>
-        <SelectContent>
-          {alunos.map((aluno: Aluno) => (
-            <SelectItem key={aluno.id} value={aluno.id}>
-              {aluno.nome}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      {data && (
+      {!data ? (
+        <p className="text-sm text-slate-500">Selecione um aluno para ver os gráficos.</p>
+      ) : (
         <>
           <div className="grid gap-6 lg:grid-cols-2">
             <GeralAlunoChart data={data.geral} />

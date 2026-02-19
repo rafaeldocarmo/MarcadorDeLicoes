@@ -10,38 +10,46 @@ export function CustomTooltip({ active, payload, label }: TooltipProps<number, s
   if (!active || !payload || !payload.length) return null
 
   const data = payload[0].payload as TooltipData
+  const naoFez = data.disciplinasNaoFez ?? []
+  const faltas = data.disciplinasFalta ?? []
+  const fez = data.disciplinasFez ?? []
 
   return (
-    <div className="rounded-lg border bg-background p-3 shadow-md text-sm space-y-2 min-w-[220px]">
-      <div className="font-semibold">{label}</div>
+    <div className="min-w-[240px] space-y-2 rounded-xl border border-sky-100 bg-white p-3 text-sm shadow-lg">
+      <div className="border-b border-sky-100 pb-1.5 font-semibold text-slate-800">{label}</div>
 
-      {/* NAO FEZ */}
-      <div>
-        <div className="list-disc list-inside text-muted-foreground text-red-500">
-          {data.disciplinasNaoFez?.map((d: string) => (
-            <p key={d}>{d}</p>
-          ))}
+      {naoFez.length > 0 ? (
+        <div className="space-y-1">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-red-600">Não fez</p>
+          <div className="space-y-0.5 text-red-500">
+            {naoFez.map((d: string) => (
+              <p key={d}>{d}</p>
+            ))}
+          </div>
         </div>
-      </div>
+      ) : null}
 
-      {/* FALTA */}
-      <div>
-        <div className="list-disc list-inside text-muted-foreground text-yellow-600">
-          {data.disciplinasFalta?.map((d: string) => (
-            <p key={d}>FA - {d}</p>
-          ))}
+      {faltas.length > 0 ? (
+        <div className="space-y-1">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-600">FA</p>
+          <div className="space-y-0.5 text-amber-600">
+            {faltas.map((d: string) => (
+              <p key={d}>{d}</p>
+            ))}
+          </div>
         </div>
-      </div>
-      
-      {/* FEZ */}
-      <div>
-        <div className="list-disc list-inside text-muted-foreground text-emerald-600">
-          {data.disciplinasFez?.map((d: string) => (
-            <p key={d}>{d}</p>
-          ))}
-        </div>
-      </div>
+      ) : null}
 
+      {fez.length > 0 ? (
+        <div className="space-y-1">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">Fez</p>
+          <div className="space-y-0.5 text-emerald-600">
+            {fez.map((d: string) => (
+              <p key={d}>{d}</p>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }

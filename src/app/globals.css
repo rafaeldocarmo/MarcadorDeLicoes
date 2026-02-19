@@ -91,16 +91,16 @@
   }
   body {
     @apply bg-background text-foreground;
-    background-color: #FFFDF2;
+    background-color: #fbfdff;
     background-image:
       linear-gradient(
         to right,
-        rgba(148, 163, 184, 0.16) 1px,
+        rgba(59, 130, 246, 0.12) 1px,
         transparent 1px
       ),
       linear-gradient(
         to bottom,
-        rgba(148, 163, 184, 0.16) 1px,
+        rgba(59, 130, 246, 0.12) 1px,
         transparent 1px
       );
     background-size: 32px 32px;
