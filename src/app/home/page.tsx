@@ -74,7 +74,10 @@ export default async function HomePage({
   const hasRequested = requestedTurmaId
     ? turmas.some((turma) => turma.id === requestedTurmaId)
     : false;
-  const selectedTurmaId = hasRequested ? (requestedTurmaId as string) : (turmas[0]?.id ?? "");
+  const ownedDefaultTurmaId = turmas.find((turma) => turma.ownerId === session.user.id)?.id;
+  const selectedTurmaId = hasRequested
+    ? (requestedTurmaId as string)
+    : (ownedDefaultTurmaId ?? turmas[0]?.id ?? "");
   const selectedTurma = turmas.find((turma) => turma.id === selectedTurmaId);
   const hasOwnedTurma = turmas.some((turma) => turma.ownerId === session.user.id);
 
