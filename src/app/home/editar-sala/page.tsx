@@ -10,6 +10,10 @@ type SearchParamsInput =
   | { turmaId?: string }
   | undefined;
 
+function toMemberRole(role: TurmaRole) {
+  return role === TurmaRole.EDITOR || role === TurmaRole.VIEWER ? role : null;
+}
+
 export default async function EditarSalaPage({
   searchParams,
 }: {
@@ -93,11 +97,19 @@ export default async function EditarSalaPage({
       initialAlunos={turma.alunos.map((aluno) => aluno.nome)}
       initialDisciplinas={turma.disciplinas}
       initialMateriais={turma.materiais}
-      initialMembers={turma.members.map((member) => ({
-        userId: member.userId,
-        email: member.user.email,
-        role: member.role,
-      }))}
+      initialMembers={turma.members
+        .map((member) => {
+          const role = toMemberRole(member.role);
+          if (!role) return null;
+          return {
+            userId: member.userId,
+            email: member.user.email,
+            role,
+          };
+        })
+        .filter((member): member is { userId: string; email: string; role: "EDITOR" | "VIEWER" } =>
+          Boolean(member)
+        )}
     />
   );
 }
