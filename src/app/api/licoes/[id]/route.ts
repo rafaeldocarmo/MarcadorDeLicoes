@@ -1,52 +1,44 @@
-import { authOptions } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
-import { getServerSession } from "next-auth"
-import { NextResponse } from "next/server"
+﻿import { prisma } from "@/lib/prisma";
+import { NextResponse } from "next/server";
+import { ApiError, errorResponse, requireAuthenticatedActor } from "@/lib/api-auth";
+import { turmaWhereByPermission } from "@/lib/rbac";
 
 type SubLicaoInput = {
-  id?: string
-  disciplina: string
-  material: string
-  descricao: string
-}
+  id?: string;
+  disciplina: string;
+  material: string;
+  descricao: string;
+};
 
 type AtualizarLicaoPayload = {
-  dataEnvio: string
-  dataEntrega: string
-  subLicoes: SubLicaoInput[]
-}
+  dataEnvio: string;
+  dataEntrega: string;
+  subLicoes: SubLicaoInput[];
+};
 
 export async function PUT(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
-    }
+    const actor = await requireAuthenticatedActor();
+    const { id } = await params;
 
-    const { id } = await params
-    const body = (await req.json()) as Partial<AtualizarLicaoPayload>
-    const dataEnvio = body.dataEnvio
-    const dataEntrega = body.dataEntrega
+    const body = (await req.json()) as Partial<AtualizarLicaoPayload>;
+    const dataEnvio = body.dataEnvio;
+    const dataEntrega = body.dataEntrega;
     const subLicoes = (body.subLicoes ?? []).filter(
-      (sub) =>
-        sub.disciplina?.trim() &&
-        sub.material?.trim() &&
-        sub.descricao?.trim()
-    )
+      (sub) => sub.disciplina?.trim() && sub.material?.trim() && sub.descricao?.trim()
+    );
 
     if (!id || !dataEnvio || !dataEntrega || subLicoes.length === 0) {
-      return NextResponse.json({ error: "Dados inválidos" }, { status: 400 })
+      throw new ApiError("Dados inválidos", 400);
     }
 
     const licao = await prisma.licao.findFirst({
       where: {
         id,
-        turma: {
-          userId: session.user.id,
-        },
+        turma: turmaWhereByPermission(actor, "EDIT_TURMA"),
       },
       select: {
         id: true,
@@ -55,33 +47,29 @@ export async function PUT(
           select: { id: true },
         },
       },
-    })
+    });
 
     if (!licao) {
-      return NextResponse.json({ error: "Lição não encontrada" }, { status: 404 })
+      throw new ApiError("Lição não encontrada ou sem acesso", 404);
     }
 
-    const existingIds = new Set(licao.subLicoes.map((s) => s.id))
-    const submittedIds = new Set(
-      subLicoes.map((s) => s.id).filter((id): id is string => Boolean(id))
-    )
+    const existingIds = new Set(licao.subLicoes.map((s) => s.id));
+    const submittedIds = new Set(subLicoes.map((s) => s.id).filter((subId): subId is string => Boolean(subId)));
 
     for (const submittedId of submittedIds) {
       if (!existingIds.has(submittedId)) {
-        return NextResponse.json({ error: "Sublição inválida" }, { status: 400 })
+        throw new ApiError("Sublição inválida", 400);
       }
     }
 
-    const idsToDelete = Array.from(existingIds).filter((id) => !submittedIds.has(id))
-    const toUpdate = subLicoes.filter(
-      (sub): sub is SubLicaoInput & { id: string } => Boolean(sub.id)
-    )
-    const toCreate = subLicoes.filter((sub) => !sub.id)
+    const idsToDelete = Array.from(existingIds).filter((subId) => !submittedIds.has(subId));
+    const toUpdate = subLicoes.filter((sub): sub is SubLicaoInput & { id: string } => Boolean(sub.id));
+    const toCreate = subLicoes.filter((sub) => !sub.id);
 
     const alunos = await prisma.aluno.findMany({
       where: { turmaId: licao.turmaId },
       select: { id: true },
-    })
+    });
 
     await prisma.$transaction(async (tx) => {
       await tx.licao.update({
@@ -90,7 +78,7 @@ export async function PUT(
           dataEnvio: new Date(dataEnvio),
           dataEntrega: new Date(dataEntrega),
         },
-      })
+      });
 
       for (const sub of toUpdate) {
         await tx.subLicao.update({
@@ -100,7 +88,7 @@ export async function PUT(
             material: sub.material,
             descricao: sub.descricao,
           },
-        })
+        });
       }
 
       if (idsToDelete.length > 0) {
@@ -108,13 +96,13 @@ export async function PUT(
           where: {
             subLicaoId: { in: idsToDelete },
           },
-        })
+        });
 
         await tx.subLicao.deleteMany({
           where: {
             id: { in: idsToDelete },
           },
-        })
+        });
       }
 
       if (toCreate.length > 0) {
@@ -130,7 +118,7 @@ export async function PUT(
               select: { id: true },
             })
           )
-        )
+        );
 
         if (alunos.length > 0) {
           await tx.entregaSubLicao.createMany({
@@ -141,15 +129,14 @@ export async function PUT(
                 status: "NAO_FEZ" as const,
               }))
             ),
-          })
+          });
         }
       }
-    })
+    });
 
-    return NextResponse.json({ id: licao.id })
+    return NextResponse.json({ id: licao.id });
   } catch (error) {
-    console.error(error)
-    return NextResponse.json({ error: "Erro ao atualizar lição" }, { status: 500 })
+    return errorResponse(error, "Erro ao atualizar lição");
   }
 }
 
@@ -158,22 +145,17 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "NÃ£o autorizado" }, { status: 401 })
-    }
+    const actor = await requireAuthenticatedActor();
+    const { id } = await params;
 
-    const { id } = await params
     if (!id) {
-      return NextResponse.json({ error: "Dados invÃ¡lidos" }, { status: 400 })
+      throw new ApiError("Dados inválidos", 400);
     }
 
     const licao = await prisma.licao.findFirst({
       where: {
         id,
-        turma: {
-          userId: session.user.id,
-        },
+        turma: turmaWhereByPermission(actor, "EDIT_TURMA"),
       },
       select: {
         id: true,
@@ -181,13 +163,13 @@ export async function DELETE(
           select: { id: true },
         },
       },
-    })
+    });
 
     if (!licao) {
-      return NextResponse.json({ error: "LiÃ§Ã£o nÃ£o encontrada" }, { status: 404 })
+      throw new ApiError("Lição não encontrada ou sem acesso", 404);
     }
 
-    const subLicaoIds = licao.subLicoes.map((sub) => sub.id)
+    const subLicaoIds = licao.subLicoes.map((sub) => sub.id);
 
     await prisma.$transaction(async (tx) => {
       if (subLicaoIds.length > 0) {
@@ -197,7 +179,7 @@ export async function DELETE(
               in: subLicaoIds,
             },
           },
-        })
+        });
 
         await tx.subLicao.deleteMany({
           where: {
@@ -205,17 +187,16 @@ export async function DELETE(
               in: subLicaoIds,
             },
           },
-        })
+        });
       }
 
       await tx.licao.delete({
         where: { id: licao.id },
-      })
-    })
+      });
+    });
 
-    return NextResponse.json({ ok: true })
+    return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error(error)
-    return NextResponse.json({ error: "Erro ao apagar liÃ§Ã£o" }, { status: 500 })
+    return errorResponse(error, "Erro ao apagar lição");
   }
 }

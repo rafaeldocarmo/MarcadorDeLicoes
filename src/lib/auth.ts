@@ -3,11 +3,13 @@ import GoogleProvider from "next-auth/providers/google"
 import { prisma } from "@/lib/prisma"
 import { NextAuthOptions } from "next-auth"
 import AzureADProvider from "next-auth/providers/azure-ad";
+import { GlobalRole } from "@prisma/client";
 
 declare module "next-auth" {
   interface Session {
     user: {
       id: string
+      globalRole: GlobalRole
       name?: string | null
       email?: string | null
       image?: string | null
@@ -34,6 +36,8 @@ export const authOptions: NextAuthOptions = {
         async session({ session, user }) {
             if (session.user && user) {
                 session.user.id = user.id
+                session.user.globalRole =
+                  (user as { globalRole?: GlobalRole }).globalRole ?? GlobalRole.USER
             }
             return session
         }

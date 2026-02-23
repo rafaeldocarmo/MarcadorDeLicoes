@@ -55,9 +55,12 @@ async function fetchAlunoAnalytics(alunoId: string): Promise<AlunoAnalyticsData>
 }
 
 export default function AlunoAnalyticsClient({ alunos }: Props) {
-  const [selectedAluno, setSelectedAluno] = useState<string | undefined>(
+  const [selectedAlunoManual, setSelectedAlunoManual] = useState<string | undefined>(
     alunos[0]?.id
   )
+  const selectedAluno = alunos.some((aluno) => aluno.id === selectedAlunoManual)
+    ? selectedAlunoManual
+    : alunos[0]?.id
 
   const [data, setData] = useState<AlunoAnalyticsData | null>(null)
 
@@ -76,7 +79,7 @@ export default function AlunoAnalyticsClient({ alunos }: Props) {
       </div>
 
       <div className="rounded-xl border border-sky-100 bg-[#f8fbff] p-3">
-        <Select value={selectedAluno} onValueChange={setSelectedAluno}>
+        <Select value={selectedAluno} onValueChange={setSelectedAlunoManual}>
           <SelectTrigger className="w-[280px] border-sky-100 bg-white">
             <SelectValue placeholder="Selecionar aluno" />
           </SelectTrigger>

@@ -101,7 +101,12 @@ function getCurrentWeekDateRange() {
   return { from, to }
 }
 
-export default function Dashboard() {
+type Props = {
+  turmaId?: string
+  canEditSala?: boolean
+}
+
+export default function Dashboard({ turmaId, canEditSala = true }: Props) {
   const [filterMode, setFilterMode] = useState<FilterMode>("month")
   const [selectedMonth, setSelectedMonth] = useState<string>(getCurrentMonthValue())
   const [rows, setRows] = useState<DashboardRow[]>([])
@@ -138,6 +143,7 @@ export default function Dashboard() {
     const params = new URLSearchParams()
     params.set("from", from.toISOString())
     params.set("to", to.toISOString())
+    if (turmaId) params.set("turmaId", turmaId)
 
     const queryString = params.toString()
     const endpoint = queryString ? `/api/dashboard?${queryString}` : "/api/dashboard"
@@ -155,7 +161,7 @@ export default function Dashboard() {
     setRows(payload.rows ?? [])
     setDays(payload.dias ?? [])
     setLoading(false)
-  }, [])
+  }, [turmaId])
 
   useEffect(() => {
     const applyFilter = async () => {
@@ -316,9 +322,13 @@ export default function Dashboard() {
           <Button variant="outline" onClick={() => void handleCopy()}>
             {copied ? "Copiado" : "Copiar tabela"}
           </Button>
-          <Button asChild variant="outline">
-            <Link href="/home/editar-sala">Alterar sala</Link>
-          </Button>
+          {canEditSala ? (
+            <Button asChild variant="outline">
+              <Link href={turmaId ? `/home/editar-sala?turmaId=${turmaId}` : "/home/editar-sala"}>
+                Alterar sala
+              </Link>
+            </Button>
+          ) : null}
         </div>
       </div>
 

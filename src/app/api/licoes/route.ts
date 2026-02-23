@@ -1,8 +1,7 @@
-﻿// /pages/api/licoes.ts
-import { prisma } from "@/lib/prisma";
-import { authOptions } from "@/lib/auth";
-import { getServerSession } from "next-auth";
+﻿import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { errorResponse, requireAuthenticatedActor } from "@/lib/api-auth";
+import { assertTurmaPermission, getFirstTurmaForPermission } from "@/lib/rbac";
 
 type LicaoWhereInput = NonNullable<
   NonNullable<Parameters<typeof prisma.licao.findMany>[0]>["where"]
@@ -10,27 +9,47 @@ type LicaoWhereInput = NonNullable<
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
+    const actor = await requireAuthenticatedActor();
 
     const url = new URL(req.url);
     const page = Math.max(1, parseInt(url.searchParams.get("page") || "1", 10));
     const pageSize = Math.max(1, parseInt(url.searchParams.get("pageSize") || "5", 10));
     const disciplina = url.searchParams.get("disciplina");
     const material = url.searchParams.get("material");
+    const turmaIdParam = url.searchParams.get("turmaId")?.trim() ?? "";
 
-    const turma = await prisma.turma.findFirst({
-      where: { userId: session.user.id },
-      select: { disciplinas: true, materiais: true },
-    });
+    let turmaId = turmaIdParam;
+    let turmaMeta: { disciplinas: string[]; materiais: string[] } | null = null;
+
+    if (turmaId) {
+      await assertTurmaPermission(actor, turmaId, "VIEW_TURMA");
+
+      turmaMeta = await prisma.turma.findUnique({
+        where: { id: turmaId },
+        select: { disciplinas: true, materiais: true },
+      });
+    } else {
+      const turma = await getFirstTurmaForPermission(actor, "VIEW_TURMA");
+      if (turma) {
+        turmaId = turma.id;
+        turmaMeta = {
+          disciplinas: turma.disciplinas,
+          materiais: turma.materiais,
+        };
+      }
+    }
+
+    if (!turmaId) {
+      return NextResponse.json({
+        items: [],
+        totalPages: 0,
+        disciplinasDisponiveis: [],
+        materiaisDisponiveis: [],
+      });
+    }
 
     const where: LicaoWhereInput = {
-      turma: {
-        userId: session.user.id,
-      },
+      turmaId,
     };
 
     if (disciplina || material) {
@@ -54,13 +73,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       items,
       totalPages: Math.ceil(total / pageSize),
-      disciplinasDisponiveis: turma?.disciplinas ?? [],
-      materiaisDisponiveis: turma?.materiais ?? [],
+      disciplinasDisponiveis: turmaMeta?.disciplinas ?? [],
+      materiaisDisponiveis: turmaMeta?.materiais ?? [],
     });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: "Erro ao buscar lições" }, { status: 500 });
+    return errorResponse(error, "Erro ao buscar lições");
   }
 }
-
-

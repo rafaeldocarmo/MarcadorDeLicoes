@@ -1,7 +1,7 @@
-﻿import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
+﻿import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { errorResponse, requireAuthenticatedActor, ApiError } from "@/lib/api-auth";
+import { assertTurmaPermission, getFirstTurmaForPermission } from "@/lib/rbac";
 
 type SubLicaoInput = {
   disciplina: string;
@@ -10,6 +10,7 @@ type SubLicaoInput = {
 };
 
 type NovaLicaoPayload = {
+  turmaId?: string;
   dataEnvio: string;
   dataEntrega: string;
   subLicoes: SubLicaoInput[];
@@ -17,44 +18,37 @@ type NovaLicaoPayload = {
 
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
+    const actor = await requireAuthenticatedActor();
 
     const body = (await req.json()) as Partial<NovaLicaoPayload>;
     const dataEnvio = body.dataEnvio;
     const dataEntrega = body.dataEntrega;
+    const turmaIdParam = body.turmaId?.trim() ?? "";
     const subLicoes = (body.subLicoes ?? []).filter(
-      (sub) =>
-        sub.disciplina?.trim() &&
-        sub.material?.trim() &&
-        sub.descricao?.trim()
+      (sub) => sub.disciplina?.trim() && sub.material?.trim() && sub.descricao?.trim()
     );
 
     if (!dataEnvio || !dataEntrega || subLicoes.length === 0) {
-      return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
+      throw new ApiError("Dados inválidos", 400);
     }
 
-    const turma = await prisma.turma.findFirst({
-      where: { userId: session.user.id },
-      orderBy: { createdAt: "desc" },
-      select: { id: true },
-    });
+    let turmaId = turmaIdParam;
 
-    if (!turma) {
-      return NextResponse.json(
-        { error: "Nenhuma turma encontrada para este usuario" },
-        { status: 400 }
-      );
+    if (turmaId) {
+      await assertTurmaPermission(actor, turmaId, "EDIT_TURMA");
+    } else {
+      const turma = await getFirstTurmaForPermission(actor, "EDIT_TURMA");
+      if (!turma) {
+        throw new ApiError("Nenhuma turma encontrada para este usuário", 400);
+      }
+      turmaId = turma.id;
     }
 
     const licao = await prisma.licao.create({
       data: {
         dataEnvio: new Date(dataEnvio),
         dataEntrega: new Date(dataEntrega),
-        turmaId: turma.id,
+        turmaId,
         subLicoes: {
           create: subLicoes,
         },
@@ -67,7 +61,7 @@ export async function POST(req: Request) {
     });
 
     const alunos = await prisma.aluno.findMany({
-      where: { turmaId: turma.id },
+      where: { turmaId },
       select: { id: true },
     });
 
@@ -85,9 +79,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ id: licao.id }, { status: 201 });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: "Erro ao criar lição" }, { status: 500 });
+    return errorResponse(error, "Erro ao criar lição");
   }
 }
-
-

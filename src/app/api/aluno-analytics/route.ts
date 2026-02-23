@@ -1,167 +1,151 @@
-﻿import { NextRequest, NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
-import { authOptions } from "@/lib/auth"
-import { getServerSession } from "next-auth"
+﻿import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { ApiError, errorResponse, requireAuthenticatedActor } from "@/lib/api-auth";
+import { turmaWhereByPermission } from "@/lib/rbac";
 
 type TimelineItem = {
-  data: string
-  fez: number
-  naoFez: number
-  falta: number
-  disciplinasFez: string[]
-  disciplinasNaoFez: string[]
-  disciplinasFalta: string[]
-}
+  data: string;
+  fez: number;
+  naoFez: number;
+  falta: number;
+  disciplinasFez: string[];
+  disciplinasNaoFez: string[];
+  disciplinasFalta: string[];
+};
 
 type DisciplinaItem = {
-  disciplina: string
-  fez: number
-  naoFez: number
-  falta: number
-}
+  disciplina: string;
+  fez: number;
+  naoFez: number;
+  falta: number;
+};
 
 type TimelineAccumulatorItem = {
-  data: string
-  fez: number
-  naoFez: number
-  falta: number
-  disciplinasFez: Set<string>
-  disciplinasNaoFez: Set<string>
-  disciplinasFalta: Set<string>
-}
+  data: string;
+  fez: number;
+  naoFez: number;
+  falta: number;
+  disciplinasFez: Set<string>;
+  disciplinasNaoFez: Set<string>;
+  disciplinasFalta: Set<string>;
+};
 
 type GeralResumo = {
-  fez: number
-  naoFez: number
-  falta: number
-}
+  fez: number;
+  naoFez: number;
+  falta: number;
+};
 
 function getEntregasAluno(alunoId: string) {
   return prisma.entregaSubLicao.findMany({
     where: { alunoId },
     include: {
       subLicao: {
-        include: { licao: true }
-      }
-    },
-    orderBy: {
-      subLicao: { licao: { dataEnvio: "asc" } }
-    }
-  })
-}
-
-type EntregaAnalytics = Awaited<ReturnType<typeof getEntregasAluno>>[number]
-
-export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
-  }
-
-  const { searchParams } = new URL(req.url)
-  const alunoId = searchParams.get("id")
-
-  if (!alunoId) {
-    return NextResponse.json(
-      { error: "Aluno nÃ£o informado" },
-      { status: 400 }
-    )
-  }
-
-  const aluno = await prisma.aluno.findFirst({
-    where: {
-      id: alunoId,
-      turma: {
-        userId: session.user.id,
+        include: { licao: true },
       },
     },
-    select: { id: true },
-  })
-
-  if (!aluno) {
-    return NextResponse.json(
-      { error: "Aluno nao encontrado" },
-      { status: 404 }
-    )
-  }
-
-  // Buscar entregas apenas do aluno pertencente ao usuario autenticado
-  const entregas: EntregaAnalytics[] = await getEntregasAluno(aluno.id)
-
-
-  // TIMELINE POR DIA
-  const timelineMap: Record<string, TimelineAccumulatorItem> = {}
-
-  entregas.forEach((entrega: EntregaAnalytics) => {
-    const dataEnvio = entrega.subLicao.licao.dataEnvio.toISOString().split("T")[0]
-
-    if (!timelineMap[dataEnvio]) {
-      timelineMap[dataEnvio] = {
-        data: dataEnvio,
-        fez: 0,
-        naoFez: 0,
-        falta: 0,
-        disciplinasFez: new Set<string>(),
-        disciplinasNaoFez: new Set<string>(),
-        disciplinasFalta: new Set<string>()
-      }
-    }
-
-    const disciplina = entrega.subLicao.disciplina
-
-    if (entrega.status === "FEZ") {
-      timelineMap[dataEnvio].fez++
-      timelineMap[dataEnvio].disciplinasFez.add(disciplina)
-    } else if (entrega.status === "NAO_FEZ") {
-      timelineMap[dataEnvio].naoFez++
-      timelineMap[dataEnvio].disciplinasNaoFez.add(disciplina)
-    } else {
-      timelineMap[dataEnvio].falta++
-      timelineMap[dataEnvio].disciplinasFalta.add(disciplina)
-    }
-  })
-
-  const timeline: TimelineItem[] = Object.values(timelineMap).map((item: TimelineAccumulatorItem): TimelineItem => ({
-    data: item.data,
-    fez: item.fez,
-    naoFez: item.naoFez,
-    falta: item.falta,
-    disciplinasFez: Array.from(item.disciplinasFez),
-    disciplinasNaoFez: Array.from(item.disciplinasNaoFez),
-    disciplinasFalta: Array.from(item.disciplinasFalta)
-  }))
-
-
-  // PERFORMANCE POR DISCIPLINA
-  const disciplinaMap: Record<string, DisciplinaItem> = {}
-
-  entregas.forEach((entrega: EntregaAnalytics) => {
-    const disciplina = entrega.subLicao.disciplina
-
-    if (!disciplinaMap[disciplina]) {
-      disciplinaMap[disciplina] = { disciplina, fez: 0, naoFez: 0, falta: 0 }
-    }
-
-    if (entrega.status === "FEZ") disciplinaMap[disciplina].fez++
-    else if (entrega.status === "NAO_FEZ") disciplinaMap[disciplina].naoFez++
-    else disciplinaMap[disciplina].falta++
-  })
-
-  const disciplinas: DisciplinaItem[] = Object.values(disciplinaMap)
-
-  // RESUMO GERAL
-  const geral = entregas.reduce(
-    (acc: GeralResumo, entrega: EntregaAnalytics): GeralResumo => {
-      if (entrega.status === "FEZ") acc.fez++
-      else if (entrega.status === "NAO_FEZ") acc.naoFez++
-      else acc.falta++
-      return acc
+    orderBy: {
+      subLicao: { licao: { dataEnvio: "asc" } },
     },
-    { fez: 0, naoFez: 0, falta: 0 }
-  )
-
-  return NextResponse.json({ timeline, disciplinas, geral })
+  });
 }
 
+type EntregaAnalytics = Awaited<ReturnType<typeof getEntregasAluno>>[number];
 
+export async function GET(req: NextRequest) {
+  try {
+    const actor = await requireAuthenticatedActor();
+
+    const { searchParams } = new URL(req.url);
+    const alunoId = searchParams.get("id");
+
+    if (!alunoId) {
+      throw new ApiError("Aluno não informado", 400);
+    }
+
+    const aluno = await prisma.aluno.findFirst({
+      where: {
+        id: alunoId,
+        turma: turmaWhereByPermission(actor, "VIEW_TURMA"),
+      },
+      select: { id: true },
+    });
+
+    if (!aluno) {
+      throw new ApiError("Aluno não encontrado ou sem acesso", 404);
+    }
+
+    const entregas: EntregaAnalytics[] = await getEntregasAluno(aluno.id);
+
+    const timelineMap: Record<string, TimelineAccumulatorItem> = {};
+
+    entregas.forEach((entrega) => {
+      const dataEnvio = entrega.subLicao.licao.dataEnvio.toISOString().split("T")[0];
+
+      if (!timelineMap[dataEnvio]) {
+        timelineMap[dataEnvio] = {
+          data: dataEnvio,
+          fez: 0,
+          naoFez: 0,
+          falta: 0,
+          disciplinasFez: new Set<string>(),
+          disciplinasNaoFez: new Set<string>(),
+          disciplinasFalta: new Set<string>(),
+        };
+      }
+
+      const disciplina = entrega.subLicao.disciplina;
+
+      if (entrega.status === "FEZ") {
+        timelineMap[dataEnvio].fez++;
+        timelineMap[dataEnvio].disciplinasFez.add(disciplina);
+      } else if (entrega.status === "NAO_FEZ") {
+        timelineMap[dataEnvio].naoFez++;
+        timelineMap[dataEnvio].disciplinasNaoFez.add(disciplina);
+      } else {
+        timelineMap[dataEnvio].falta++;
+        timelineMap[dataEnvio].disciplinasFalta.add(disciplina);
+      }
+    });
+
+    const timeline: TimelineItem[] = Object.values(timelineMap).map((item) => ({
+      data: item.data,
+      fez: item.fez,
+      naoFez: item.naoFez,
+      falta: item.falta,
+      disciplinasFez: Array.from(item.disciplinasFez),
+      disciplinasNaoFez: Array.from(item.disciplinasNaoFez),
+      disciplinasFalta: Array.from(item.disciplinasFalta),
+    }));
+
+    const disciplinaMap: Record<string, DisciplinaItem> = {};
+
+    entregas.forEach((entrega) => {
+      const disciplina = entrega.subLicao.disciplina;
+
+      if (!disciplinaMap[disciplina]) {
+        disciplinaMap[disciplina] = { disciplina, fez: 0, naoFez: 0, falta: 0 };
+      }
+
+      if (entrega.status === "FEZ") disciplinaMap[disciplina].fez++;
+      else if (entrega.status === "NAO_FEZ") disciplinaMap[disciplina].naoFez++;
+      else disciplinaMap[disciplina].falta++;
+    });
+
+    const disciplinas: DisciplinaItem[] = Object.values(disciplinaMap);
+
+    const geral = entregas.reduce(
+      (acc: GeralResumo, entrega: EntregaAnalytics): GeralResumo => {
+        if (entrega.status === "FEZ") acc.fez++;
+        else if (entrega.status === "NAO_FEZ") acc.naoFez++;
+        else acc.falta++;
+        return acc;
+      },
+      { fez: 0, naoFez: 0, falta: 0 }
+    );
+
+    return NextResponse.json({ timeline, disciplinas, geral });
+  } catch (error) {
+    return errorResponse(error, "Erro ao buscar analytics do aluno");
+  }
+}

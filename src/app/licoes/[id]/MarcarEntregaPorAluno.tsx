@@ -41,6 +41,7 @@ type Entrega = {
 type Props = {
   licao: Licao;
   entregas: Entrega[];
+  canEditLicao: boolean;
 };
 
 function formatDateBr(value: Date | string) {
@@ -51,6 +52,7 @@ function formatDateBr(value: Date | string) {
 export default function MarcarEntregaPorAluno({
   licao,
   entregas,
+  canEditLicao,
 }: Props) {
   const [isPending, startTransition] = useTransition();
   const [isDeleting, setIsDeleting] = useState(false);
@@ -261,7 +263,7 @@ export default function MarcarEntregaPorAluno({
                   <td className="p-4 text-center">
                     <Switch
                       checked={faltasPorAluno.has(aluno.id)}
-                      disabled={isPending}
+                      disabled={isPending || !canEditLicao}
                       onCheckedChange={(checked) =>
                         toggleFaltaAluno(aluno.id, checked)
                       }
@@ -279,7 +281,7 @@ export default function MarcarEntregaPorAluno({
                       >
                         <Switch
                           checked={status === "FEZ"}
-                          disabled={isPending || faltasPorAluno.has(aluno.id)}
+                          disabled={isPending || faltasPorAluno.has(aluno.id) || !canEditLicao}
                           onCheckedChange={(checked) =>
                             toggleStatus(
                               aluno.id,
@@ -301,28 +303,30 @@ export default function MarcarEntregaPorAluno({
           <Button className="rounded-2xl px-6" variant="outline">
             <Link href="/home">Voltar para Home</Link>
           </Button>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="destructive"
-              disabled={isPending || isDeleting}
-              onClick={() => void handleApagarLicao()}
-              className="rounded-2xl px-6"
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              {isDeleting ? "Apagando..." : "Apagar lição"}
-            </Button>
-            <Button asChild className="rounded-2xl px-6" variant="outline">
-              <Link href={`/licoes/${licao.id}/editar`}>Editar lição</Link>
-            </Button>
-            <Button
-              onClick={handleSalvar}
-              disabled={isPending || isDeleting}
-              className="rounded-2xl px-6"
-            >
-              {isPending ? "Salvando..." : "Salvar alterações"}
-            </Button>
-          </div>
+          {canEditLicao ? (
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="destructive"
+                disabled={isPending || isDeleting}
+                onClick={() => void handleApagarLicao()}
+                className="rounded-2xl px-6"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                {isDeleting ? "Apagando..." : "Apagar lição"}
+              </Button>
+              <Button asChild className="rounded-2xl px-6" variant="outline">
+                <Link href={`/licoes/${licao.id}/editar`}>Editar lição</Link>
+              </Button>
+              <Button
+                onClick={handleSalvar}
+                disabled={isPending || isDeleting}
+                className="rounded-2xl px-6"
+              >
+                {isPending ? "Salvando..." : "Salvar alterações"}
+              </Button>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

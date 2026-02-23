@@ -40,6 +40,7 @@ type Props = {
   hasLicoes: boolean
   disciplinas: string[]
   materiais: string[]
+  turmaId?: string
   mode?: "create" | "edit"
   licaoId?: string
   initialDataEnvio?: string
@@ -51,6 +52,7 @@ export default function NovaLicaoForm({
   hasLicoes,
   disciplinas,
   materiais,
+  turmaId,
   mode = "create",
   licaoId,
   initialDataEnvio,
@@ -119,6 +121,7 @@ export default function NovaLicaoForm({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          turmaId,
           dataEnvio: dataEnvio.toISOString(),
           dataEntrega: dataEntrega.toISOString(),
           subLicoes,

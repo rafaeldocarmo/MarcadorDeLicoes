@@ -1,103 +1,166 @@
-﻿import { NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+﻿import { NextResponse } from "next/server";
+import { GlobalRole, TurmaRole } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
+import { ApiError, errorResponse, requireAuthenticatedActor } from "@/lib/api-auth";
+import { assertTurmaPermission, getFirstTurmaForPermission } from "@/lib/rbac";
 
 type TurmaPayload = {
-  nome?: string
-  alunos?: string[]
-  disciplinas?: string[]
-  materiais?: string[]
-}
+  turmaId?: string;
+  nome?: string;
+  alunos?: string[];
+  disciplinas?: string[];
+  materiais?: string[];
+};
 
 function normalizeList(values: string[] = []) {
-  return Array.from(
-    new Set(values.map((item) => item.trim()).filter((item) => item.length > 0))
-  )
+  return Array.from(new Set(values.map((item) => item.trim()).filter((item) => item.length > 0)));
+}
+
+export async function GET() {
+  try {
+    const actor = await requireAuthenticatedActor();
+
+    const turmas = await prisma.turma.findMany({
+      where:
+        actor.globalRole === GlobalRole.ADMIN_GLOBAL
+          ? {}
+          : {
+              OR: [
+                { ownerId: actor.id },
+                {
+                  members: {
+                    some: {
+                      userId: actor.id,
+                    },
+                  },
+                },
+              ],
+            },
+      select: {
+        id: true,
+        nome: true,
+        ownerId: true,
+        members: {
+          where: { userId: actor.id },
+          select: { role: true },
+          take: 1,
+        },
+      },
+      orderBy: [{ createdAt: "desc" }],
+    });
+
+    return NextResponse.json(
+      turmas.map((turma) => ({
+        id: turma.id,
+        nome: turma.nome,
+        role:
+          actor.globalRole === GlobalRole.ADMIN_GLOBAL
+            ? "ADMIN_GLOBAL"
+            : turma.ownerId === actor.id
+              ? TurmaRole.OWNER
+              : (turma.members[0]?.role ?? TurmaRole.VIEWER),
+      }))
+    );
+  } catch (error) {
+    return errorResponse(error, "Erro ao listar turmas");
+  }
 }
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions)
+  try {
+    const actor = await requireAuthenticatedActor();
+    const body = (await req.json()) as TurmaPayload;
 
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
-  }
+    const nome = body.nome?.trim() ?? "";
+    const alunos = normalizeList(body.alunos);
+    const disciplinas = normalizeList(body.disciplinas);
+    const materiais = normalizeList(body.materiais);
 
-  const body = (await req.json()) as TurmaPayload
+    if (!nome || !alunos.length || !disciplinas.length || !materiais.length) {
+      throw new ApiError("Dados inválidos", 400);
+    }
 
-  const nome = body.nome?.trim() ?? ""
-  const alunos = normalizeList(body.alunos)
-  const disciplinas = normalizeList(body.disciplinas)
-  const materiais = normalizeList(body.materiais)
-
-  if (!nome || !alunos.length || !disciplinas.length || !materiais.length) {
-    return NextResponse.json({ error: "Dados inválidos" }, { status: 400 })
-  }
-
-  const turma = await prisma.turma.create({
-    data: {
-      nome,
-      userId: session.user.id,
-      disciplinas,
-      materiais,
-      alunos: {
-        create: alunos.map((nomeAluno: string) => ({
-          nome: nomeAluno,
-        })),
+    const turma = await prisma.turma.create({
+      data: {
+        nome,
+        ownerId: actor.id,
+        disciplinas,
+        materiais,
+        members: {
+          create: {
+            userId: actor.id,
+            role: TurmaRole.OWNER,
+          },
+        },
+        alunos: {
+          create: alunos.map((nomeAluno) => ({ nome: nomeAluno })),
+        },
       },
-    },
-    include: {
-      alunos: true,
-    },
-  })
+      include: {
+        alunos: true,
+      },
+    });
 
-  return NextResponse.json(turma)
+    return NextResponse.json(turma);
+  } catch (error) {
+    return errorResponse(error, "Erro ao criar turma");
+  }
 }
 
 export async function PUT(req: Request) {
-  const session = await getServerSession(authOptions)
+  try {
+    const actor = await requireAuthenticatedActor();
+    const body = (await req.json()) as TurmaPayload;
 
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
-  }
+    const nome = body.nome?.trim() ?? "";
+    const alunos = normalizeList(body.alunos);
+    const disciplinas = normalizeList(body.disciplinas);
+    const materiais = normalizeList(body.materiais);
 
-  const body = (await req.json()) as TurmaPayload
+    if (!nome || !alunos.length || !disciplinas.length || !materiais.length) {
+      throw new ApiError("Dados inválidos", 400);
+    }
 
-  const nome = body.nome?.trim() ?? ""
-  const alunos = normalizeList(body.alunos)
-  const disciplinas = normalizeList(body.disciplinas)
-  const materiais = normalizeList(body.materiais)
+    const requestedTurmaId = body.turmaId?.trim() ?? "";
+    let turmaId = requestedTurmaId;
 
-  if (!nome || !alunos.length || !disciplinas.length || !materiais.length) {
-    return NextResponse.json({ error: "Dados inválidos" }, { status: 400 })
-  }
+    if (turmaId) {
+      await assertTurmaPermission(actor, turmaId, "EDIT_TURMA");
+    } else {
+      const turmaPadrao = await getFirstTurmaForPermission(actor, "EDIT_TURMA");
+      if (!turmaPadrao) {
+        throw new ApiError("Turma não encontrada", 404);
+      }
+      turmaId = turmaPadrao.id;
+    }
 
-  const turma = await prisma.turma.findFirst({
-    where: { userId: session.user.id },
-    include: { alunos: { select: { nome: true } } },
-  })
+    const turma = await prisma.turma.findUnique({
+      where: { id: turmaId },
+      include: { alunos: { select: { nome: true } } },
+    });
 
-  if (!turma) {
-    return NextResponse.json({ error: "Turma não encontrada" }, { status: 404 })
-  }
+    if (!turma) {
+      throw new ApiError("Turma não encontrada", 404);
+    }
 
-  const nomesAtuais = new Set(turma.alunos.map((aluno: { nome: string }) => aluno.nome))
-  const alunosParaCriar = alunos.filter((nomeAluno: string) => !nomesAtuais.has(nomeAluno))
+    const nomesAtuais = new Set(turma.alunos.map((aluno) => aluno.nome));
+    const alunosParaCriar = alunos.filter((nomeAluno) => !nomesAtuais.has(nomeAluno));
 
-  const turmaAtualizada = await prisma.turma.update({
-    where: { id: turma.id },
-    data: {
-      nome,
-      disciplinas,
-      materiais,
-      alunos: {
-        create: alunosParaCriar.map((nomeAluno: string) => ({ nome: nomeAluno })),
+    const turmaAtualizada = await prisma.turma.update({
+      where: { id: turma.id },
+      data: {
+        nome,
+        disciplinas,
+        materiais,
+        alunos: {
+          create: alunosParaCriar.map((nomeAluno) => ({ nome: nomeAluno })),
+        },
       },
-    },
-    include: { alunos: true },
-  })
+      include: { alunos: true },
+    });
 
-  return NextResponse.json(turmaAtualizada)
+    return NextResponse.json(turmaAtualizada);
+  } catch (error) {
+    return errorResponse(error, "Erro ao atualizar turma");
+  }
 }
-
-

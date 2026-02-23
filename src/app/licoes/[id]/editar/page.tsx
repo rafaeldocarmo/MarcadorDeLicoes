@@ -1,8 +1,9 @@
-import { authOptions } from "@/lib/auth"
+﻿import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getServerSession } from "next-auth"
 import { notFound, redirect } from "next/navigation"
 import NovaLicaoForm from "../../novaLicaoForm"
+import { GlobalRole, TurmaRole } from "@prisma/client"
 
 export default async function EditarLicaoPage({
   params,
@@ -17,12 +18,38 @@ export default async function EditarLicaoPage({
   const { id } = await params
   if (!id) notFound()
 
+  const actor = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { globalRole: true },
+  })
+
+  if (!actor) {
+    redirect("/")
+  }
+
+  const turmaScopeWhere =
+    actor.globalRole === GlobalRole.ADMIN_GLOBAL
+      ? {}
+      : {
+          OR: [
+            { ownerId: session.user.id },
+            {
+              members: {
+                some: {
+                  userId: session.user.id,
+                  role: {
+                    in: [TurmaRole.OWNER, TurmaRole.EDITOR],
+                  },
+                },
+              },
+            },
+          ],
+        }
+
   const licao = await prisma.licao.findFirst({
     where: {
       id,
-      turma: {
-        userId: session.user.id,
-      },
+      turma: turmaScopeWhere,
     },
     include: {
       subLicoes: {
@@ -30,6 +57,7 @@ export default async function EditarLicaoPage({
       },
       turma: {
         select: {
+          id: true,
           disciplinas: true,
           materiais: true,
         },
@@ -42,6 +70,7 @@ export default async function EditarLicaoPage({
   return (
     <NovaLicaoForm
       hasLicoes
+      turmaId={licao.turma.id}
       disciplinas={licao.turma.disciplinas}
       materiais={licao.turma.materiais}
       mode="edit"

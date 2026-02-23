@@ -12,12 +12,14 @@ model User {
   email         String          @unique
   emailVerified DateTime?
   image         String?
+  globalRole    GlobalRole      @default(USER)
   accounts      Account[]
   sessions      Session[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
 
-  turmas        Turma[] 
+  ownedTurmas   Turma[]         @relation("TurmaOwner")
+  turmaMembers  TurmaMember[]
 }
  
 model Account {
@@ -61,15 +63,31 @@ model VerificationToken {
 
 
 model Turma {
-  id        String   @id @default(cuid())
-  nome      String
-  disciplinas String[] @default([])
-  materiais String[] @default([])
+  id          String        @id @default(cuid())
+  nome        String
+  disciplinas String[]      @default([])
+  materiais   String[]      @default([])
+  ownerId     String        @map("userId")
+  owner       User          @relation("TurmaOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members     TurmaMember[]
+  alunos      Aluno[]
+  licoes      Licao[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model TurmaMember {
+  id        String    @id @default(cuid())
+  turmaId   String
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  alunos    Aluno[]
-  licoes    Licao[]
-  createdAt DateTime @default(now())
+  role      TurmaRole
+  turma     Turma     @relation(fields: [turmaId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([turmaId, userId])
+  @@index([userId])
 }
 
 
@@ -106,6 +124,17 @@ enum StatusEntrega {
   FEZ
   NAO_FEZ
   FALTA
+}
+
+enum GlobalRole {
+  USER
+  ADMIN_GLOBAL
+}
+
+enum TurmaRole {
+  OWNER
+  EDITOR
+  VIEWER
 }
 
 model EntregaSubLicao {

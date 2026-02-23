@@ -1,9 +1,9 @@
-﻿import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+﻿import { prisma } from "@/lib/prisma";
 import { StatusEntrega } from "@prisma/client";
 import { revalidatePath } from "next/cache";
-import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
+import { ApiError, errorResponse, requireAuthenticatedActor } from "@/lib/api-auth";
+import { turmaWhereByPermission } from "@/lib/rbac";
 
 type Status = "FEZ" | "NAO_FEZ" | "FALTA";
 
@@ -20,11 +20,7 @@ type SalvarEntregasPayload = {
 
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
+    const actor = await requireAuthenticatedActor();
 
     const body = (await req.json()) as Partial<SalvarEntregasPayload>;
     const licaoId = body.licaoId?.trim() ?? "";
@@ -33,25 +29,20 @@ export async function POST(req: Request) {
     const recebeuFalta = entregas.some((entrega) => entrega?.status === "FALTA");
 
     if (recebeuFalta && !statusPermitidos.has("FALTA")) {
-      return NextResponse.json(
-        {
-          error:
-            "Status 'FALTA' não está disponível no banco ainda. Rode a migration e regenere o Prisma Client.",
-        },
-        { status: 409 }
+      throw new ApiError(
+        "Status 'FALTA' não está disponível no banco ainda. Rode a migration e regenere o Prisma Client.",
+        409
       );
     }
 
     if (!licaoId || !Array.isArray(entregas)) {
-      return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
+      throw new ApiError("Dados inválidos", 400);
     }
 
     const licao = await prisma.licao.findFirst({
       where: {
         id: licaoId,
-        turma: {
-          userId: session.user.id,
-        },
+        turma: turmaWhereByPermission(actor, "EDIT_TURMA"),
       },
       select: {
         id: true,
@@ -69,7 +60,7 @@ export async function POST(req: Request) {
     });
 
     if (!licao) {
-      return NextResponse.json({ error: "Lição não encontrada" }, { status: 404 });
+      throw new ApiError("Lição não encontrada ou sem acesso", 404);
     }
 
     const alunosValidos = new Set(licao.turma.alunos.map((aluno) => aluno.id));
@@ -107,8 +98,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: "Erro ao salvar entregas" }, { status: 500 });
+    return errorResponse(error, "Erro ao salvar entregas");
   }
 }
-

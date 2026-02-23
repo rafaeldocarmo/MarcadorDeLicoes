@@ -72,7 +72,12 @@ function getDisciplinaBadges(licao: Licao) {
 
 const WEEK_DAYS = ["Seg", "Ter", "Qua", "Qui", "Sex"]
 
-export default function LicoesList() {
+type Props = {
+  turmaId?: string
+  canCreateLicao?: boolean
+}
+
+export default function LicoesList({ turmaId, canCreateLicao = true }: Props) {
   const router = useRouter()
   const [licoes, setLicoes] = useState<Licao[]>([])
   const [disciplinaFilter, setDisciplinaFilter] = useState<string | undefined>()
@@ -88,6 +93,7 @@ export default function LicoesList() {
       params.append("pageSize", "500")
       if (disciplinaFilter) params.append("disciplina", disciplinaFilter)
       if (materialFilter) params.append("material", materialFilter)
+      if (turmaId) params.append("turmaId", turmaId)
 
       const res = await fetch(`/api/licoes?${params.toString()}`)
       if (!res.ok) {
@@ -102,7 +108,7 @@ export default function LicoesList() {
     }
 
     fetchLicoes()
-  }, [disciplinaFilter, materialFilter])
+  }, [disciplinaFilter, materialFilter, turmaId])
 
   const monthLabel = useMemo(
     () =>
@@ -144,17 +150,22 @@ export default function LicoesList() {
   }, [monthCursor])
 
   function openCreateLicaoWithDate(day: Date) {
+    if (!canCreateLicao) return
     const dateKey = toLocalDateKey(day)
-    router.push(`/licoes?dataEntrega=${dateKey}`)
+    const params = new URLSearchParams({ dataEntrega: dateKey })
+    if (turmaId) params.set("turmaId", turmaId)
+    router.push(`/licoes?${params.toString()}`)
   }
 
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <h2 className="text-2xl font-semibold">Agenda de Lições</h2>
-        <Button asChild>
-          <Link href="/licoes">Criar nova lição</Link>
-        </Button>
+        {canCreateLicao ? (
+          <Button asChild>
+            <Link href={turmaId ? `/licoes?turmaId=${turmaId}` : "/licoes"}>Criar nova lição</Link>
+          </Button>
+        ) : null}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -239,19 +250,22 @@ export default function LicoesList() {
             return (
               <div
                 key={key}
-                role="button"
-                tabIndex={0}
+                role={canCreateLicao ? "button" : undefined}
+                tabIndex={canCreateLicao ? 0 : -1}
                 onClick={() => openCreateLicaoWithDate(day)}
                 onKeyDown={(event) => {
+                  if (!canCreateLicao) return
                   if (event.key === "Enter" || event.key === " ") {
                     event.preventDefault()
                     openCreateLicaoWithDate(day)
                   }
                 }}
-                className={`min-h-[108px] cursor-pointer rounded-xl border p-2 shadow-[0_1px_0_rgba(0,0,0,0.03)] transition-all hover:-translate-y-0.5 ${
+                className={`min-h-[108px] rounded-xl border p-2 shadow-[0_1px_0_rgba(0,0,0,0.03)] transition-all ${
+                  canCreateLicao ? "cursor-pointer hover:-translate-y-0.5" : "cursor-default"
+                } ${
                   dayLicoes.length > 0
-                    ? "border-sky-200 bg-[#f6faff] hover:border-sky-300"
-                    : "border-slate-200/80 bg-white/90 hover:border-sky-200"
+                    ? `border-sky-200 bg-[#f6faff] ${canCreateLicao ? "hover:border-sky-300" : ""}`
+                    : `border-slate-200/80 bg-white/90 ${canCreateLicao ? "hover:border-sky-200" : ""}`
                 }`}
               >
                 <div className="mb-2 flex items-center justify-between">

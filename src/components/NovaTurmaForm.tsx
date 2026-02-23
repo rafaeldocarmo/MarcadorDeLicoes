@@ -1,6 +1,6 @@
-"use client"
+﻿"use client"
 
-import { useState, useTransition } from "react"
+import { useMemo, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import {
   Card,
@@ -12,24 +12,66 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+
+type MemberRole = "EDITOR" | "VIEWER"
+
+type MemberInput = {
+  userId?: string
+  email: string
+  role: MemberRole
+}
 
 type Props = {
   mode?: "create" | "edit"
+  allowManageMembers?: boolean
+  initialTurmaId?: string
   initialNome?: string
   initialAlunos?: string[]
   initialDisciplinas?: string[]
   initialMateriais?: string[]
+  initialMembers?: MemberInput[]
+}
+
+type TurmaResponse = {
+  id: string
+}
+
+function normalizeMembers(members: MemberInput[]) {
+  const byEmail = new Map<string, MemberInput>()
+
+  for (const member of members) {
+    const normalizedEmail = member.email.trim().toLowerCase()
+    if (!normalizedEmail) continue
+    byEmail.set(normalizedEmail, {
+      userId: member.userId,
+      email: normalizedEmail,
+      role: member.role,
+    })
+  }
+
+  return Array.from(byEmail.values())
 }
 
 export default function NovaTurmaForm({
   mode = "create",
+  allowManageMembers = true,
+  initialTurmaId,
   initialNome = "",
   initialAlunos = [""],
   initialDisciplinas = [""],
   initialMateriais = [""],
+  initialMembers = [],
 }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const [nome, setNome] = useState(initialNome)
   const [alunos, setAlunos] = useState<string[]>(
@@ -41,6 +83,9 @@ export default function NovaTurmaForm({
   const [materiais, setMateriais] = useState<string[]>(
     initialMateriais.length > 0 ? initialMateriais : [""]
   )
+  const [members, setMembers] = useState<MemberInput[]>(initialMembers)
+
+  const normalizedMembers = useMemo(() => normalizeMembers(members), [members])
 
   function adicionarAluno() {
     setAlunos((prev) => [...prev, ""])
@@ -82,7 +127,73 @@ export default function NovaTurmaForm({
     )
   }
 
+  function adicionarMembro() {
+    setMembers((prev) => [...prev, { email: "", role: "VIEWER" }])
+  }
+
+  function removerMembro(index: number) {
+    setMembers((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  function atualizarMembro(index: number, patch: Partial<MemberInput>) {
+    setMembers((prev) => prev.map((member, i) => (i === index ? { ...member, ...patch } : member)))
+  }
+
+  async function syncMembers(turmaId: string) {
+    const currentRes = await fetch(`/api/turmas/${turmaId}/members`, {
+      method: "GET",
+    })
+
+    if (!currentRes.ok) {
+      throw new Error("Não foi possível carregar os membros atuais")
+    }
+
+    const currentMembers = (await currentRes.json()) as MemberInput[]
+
+    const desiredByEmail = new Map(
+      normalizedMembers.map((member) => [member.email.toLowerCase(), member])
+    )
+
+    for (const current of currentMembers) {
+      const existing = desiredByEmail.get(current.email.toLowerCase())
+      if (!existing) {
+        const deleteRes = await fetch(`/api/turmas/${turmaId}/members`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ userId: current.userId }),
+        })
+
+        if (!deleteRes.ok) {
+          const data = await deleteRes.json().catch(() => ({}))
+          throw new Error(data.error ?? `Não foi possível remover ${current.email}`)
+        }
+      }
+    }
+
+    for (const desired of normalizedMembers) {
+      const upsertRes = await fetch(`/api/turmas/${turmaId}/members`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: desired.email,
+          role: desired.role,
+        }),
+      })
+
+      if (!upsertRes.ok) {
+        const data = await upsertRes.json().catch(() => ({}))
+        throw new Error(data.error ?? `Não foi possível atribuir permissão para ${desired.email}`)
+      }
+    }
+  }
+
   async function handleSubmit(formData: FormData) {
+    setErrorMessage(null)
+
     startTransition(async () => {
       const res = await fetch("/api/turmas", {
         method: mode === "edit" ? "PUT" : "POST",
@@ -90,6 +201,7 @@ export default function NovaTurmaForm({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          turmaId: mode === "edit" ? initialTurmaId : undefined,
           nome: nome || (formData.get("nome") as string),
           alunos: alunos.filter((a) => a.trim() !== ""),
           disciplinas: disciplinas.filter((d) => d.trim() !== ""),
@@ -97,10 +209,26 @@ export default function NovaTurmaForm({
         }),
       })
 
-      if (res.ok) {
-        router.push("/licoes")
-        router.refresh()
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        setErrorMessage(data.error ?? "Não foi possível salvar a turma")
+        return
       }
+
+      const turma = (await res.json()) as TurmaResponse
+      const turmaId = mode === "edit" ? (initialTurmaId ?? turma.id) : turma.id
+
+      if (turmaId && allowManageMembers) {
+        try {
+          await syncMembers(turmaId)
+        } catch (error) {
+          setErrorMessage(error instanceof Error ? error.message : "Erro ao salvar permissões")
+          return
+        }
+      }
+
+      router.push("/home")
+      router.refresh()
     })
   }
 
@@ -113,8 +241,8 @@ export default function NovaTurmaForm({
           </CardTitle>
           <CardDescription>
             {mode === "edit"
-              ? "Atualize o nome da sala, alunos, disciplinas e materiais."
-              : "Bem-vindo! Para iniciar o uso da aplicação, vocâ precisa criar uma turma primeiro."}
+              ? "Atualize o nome da sala, alunos, disciplinas, materiais e permissões dos membros."
+              : "Bem-vindo! Crie sua sala personalizada para gerenciar as lições de seus alunos."}
           </CardDescription>
         </CardHeader>
 
@@ -130,6 +258,51 @@ export default function NovaTurmaForm({
                 required
               />
             </div>
+
+            {allowManageMembers ? (
+              <div className="space-y-4">
+                <h2 className="text-lg font-semibold">Permissões de membros</h2>
+
+                {members.length === 0 ? (
+                  <p className="text-sm text-slate-500">Nenhum membro com permissão adicional.</p>
+                ) : null}
+
+                {members.map((member, index) => (
+                  <div key={`member-${index}`} className="grid grid-cols-1 gap-2 md:grid-cols-[1fr_160px_auto]">
+                    <Input
+                      value={member.email}
+                      onChange={(e) => atualizarMembro(index, { email: e.target.value })}
+                      placeholder="Email do usuário"
+                      type="email"
+                      required
+                    />
+                    <Select
+                      value={member.role}
+                      onValueChange={(value: MemberRole) => atualizarMembro(index, { role: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Permissão" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="VIEWER">Visualização</SelectItem>
+                        <SelectItem value="EDITOR">Edição</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      onClick={() => removerMembro(index)}
+                    >
+                      Remover
+                    </Button>
+                  </div>
+                ))}
+
+                <Button type="button" variant="outline" onClick={adicionarMembro}>
+                  + Adicionar membro
+                </Button>
+              </div>
+            ) : null}
 
             <div className="space-y-4">
               <h2 className="text-lg font-semibold">Alunos</h2>
@@ -222,6 +395,12 @@ export default function NovaTurmaForm({
                 + Adicionar Material
               </Button>
             </div>
+
+            {errorMessage ? (
+              <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {errorMessage}
+              </p>
+            ) : null}
 
             <div className="flex justify-end">
               <Button disabled={isPending}>
